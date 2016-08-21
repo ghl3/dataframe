@@ -1,4 +1,5 @@
 (ns dataframe.series
+  (:refer-clojure :exclude [nth])
   (:require [clojure.core.matrix :as matrix]
             [dataframe.util :refer :all]
             [clojure.string :as str]
@@ -44,7 +45,7 @@
 
   ; TODO: Infer when we can leverage a matrix
   (let [data-as-matrix (vec data)
-        index (if index index (range (count data)))
+        index (vec (if index index (range (count data))))
         index-lookup (into {} (enumerate index false))
         srs (Series. data-as-matrix index)]
 
@@ -60,6 +61,13 @@
   [srs i]
   (let [position (get (:index-lookup srs) i)]
     (get (:data srs) position)))
+
+
+(defn nth
+  "Takes a series and an integer and
+  returns the "
+  [srs n]
+  (get (:data srs) n))
 
 
 (defn srs->map
