@@ -10,15 +10,17 @@
 ; A Frame contains a map of column names to
 ; Series objects holding the underlying data
 ; as well as an index
-(defrecord ^{:protected true} Frame [data index columns])
+(defrecord ^{:protected true} Frame [index columns])
 
 
 ; It has an index for row-wise lookups
 (defn frame
   [data-map & {:keys [index]}]
 
-  ; Cannot have a key named 'index'
+  ; Assert that input data doesn't have reserved keys
+  (assert (nil? (::data data-map)))
   (assert (nil? (:index data-map)))
+  (assert (nil? (:columns data-map)))
 
   ; Ensure all values have the same length
   (assert (apply = (map count (vals data-map))))
@@ -27,15 +29,16 @@
   (if index (assert (apply distinct? index)))
 
   (let [nrows (-> data-map vals first count)
-        index (vec (if index index (range nrows)))]
+        index (vec (if index index (range nrows)))
+        data (into (sorted-map) (map
+                                  (fn [[col-name col-data]]
+                                    [col-name (series/series col-data :index index :name col-name)])
+                                  data-map))]
 
+    (merge
+      (assoc (Frame. index (keys data-map)) ::data data)
+      data)))
 
-    (Frame. (into (sorted-map) (map
-                                 (fn [[col-name col-data]]
-                                  [col-name (series/series col-data :index index :name col-name)])
-                                data-map))
-            index
-            (keys data-map))))
 
 
 (defmethod print-method Frame [df writer]
@@ -62,8 +65,8 @@
   "
   [df i]
   (if (get (:index df) i)
-    (let [vals (map #(series/ix % i) (-> df :data vals))]
-      (series/series vals :index (-> df :data keys) :name i))
+    (let [vals (map #(series/ix % i) (-> df ::data vals))]
+      (series/series vals :index (-> df ::data keys) :name i))
     nil))
 
 
@@ -81,8 +84,8 @@
   "
   [df n]
   (if (< n (count (:index df)))
-    (let [vals (map #(series/nth % n) (-> df :data vals))]
-      (series/series vals :index (-> df :data keys) :name (get (:index df) n)))
+    (let [vals (map #(series/nth % n) (-> df ::data vals))]
+      (series/series vals :index (-> df ::data keys) :name (get (:index df) n)))
     nil))
 
 
@@ -90,7 +93,7 @@
   "Return the column from the dataframe
   by the given name as a Series"
   [df col-name]
-  (-> df :data col-name))
+  (-> df ::data col-name))
 
 
 (defn iterrows
@@ -101,5 +104,5 @@
   [df]
   (zip
     (:index df)
-    (apply zip (map :data (vals (:data df))))))
+    (apply zip (map ::series/data (vals (::data df))))))
 

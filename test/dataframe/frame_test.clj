@@ -21,7 +21,7 @@
 
 (expect (more-of srs
                  :x (:name srs)
-                 [1 2] (:data srs))
+                 [1 2] (::series/data srs))
         (-> (frame/frame {:a '(1 2 3) :b '(2 4 6)} :index [:x :y :z])
             (frame/nth 0)))
 

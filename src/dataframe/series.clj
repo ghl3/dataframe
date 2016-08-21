@@ -27,7 +27,7 @@
 ; All items in the index must be unique.
 ;
 ; TODO: Make the index know it's internal position for fast lookup
-(defrecord ^{:protected true} Series [data index])
+(defrecord ^{:protected true} Series [index])
 
 
 (defmethod print-method Series [srs writer]
@@ -35,7 +35,7 @@
                       (if-let [name (:name srs)] (str ": " name) "")
                       "\n"
                       (str/join "\n"
-                                (map (fn [[i d]] (str i " " d)) (zip (:index srs) (:data srs)))))))
+                                (map (fn [[i d]] (str i " " d)) (zip (:index srs) (::data srs)))))))
 
 
 (defn series
@@ -47,11 +47,12 @@
   (let [data-as-matrix (vec data)
         index (vec (if index index (range (count data))))
         index-lookup (into {} (enumerate index false))
-        srs (Series. data-as-matrix index)]
+        srs (Series. index)]
 
-    (cond-> srs
-            name (assoc :name name)
-            true (assoc :index-lookup index-lookup))))
+    (cond-> (assoc srs
+              ::data data-as-matrix
+              ::index-lookup index-lookup)
+            name (assoc :name name))))
 
 
 (defn ix
@@ -59,17 +60,17 @@
   the item in the series corresponding
   to the input index"
   [srs i]
-  (let [position (get (:index-lookup srs) i)]
-    (get (:data srs) position)))
+  (let [position (get (::index-lookup srs) i)]
+    (get (::data srs) position)))
 
 
 (defn nth
   "Takes a series and an integer and
   returns the "
   [srs n]
-  (get (:data srs) n))
+  (get (::data srs) n))
 
 
 (defn srs->map
   [srs]
-  (into (sorted-map) (zip (:index srs) (:data srs))))
+  (into (sorted-map) (zip (:index srs) (::data srs))))
