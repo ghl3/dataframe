@@ -19,3 +19,20 @@
 (defn col [^Frame df & args] (apply dataframe.frame/col (concat [df] args)))
 
 (defn max [^Series srs] (apply core/max (:data srs)))
+
+
+(defn- replace-kws
+  [expr replace-fn]
+  (cond (keyword? expr)  (replace-fn expr)
+        (vector? expr)   (apply vec (map #(replace-kws % replace-fn) expr))
+        (list? expr)     (apply list (map #(replace-kws % replace-fn) expr))
+        (map? expr)      (into (sorted-map) (map (fn [[k v]] [(replace-kws k replace-fn) (replace-kws v replace-fn)]) expr))
+        :else            expr))
+
+
+(defmacro with-df->
+  [df & exprs]
+  (let [transformation (fn [kw] `(get ~df ~kw ~kw))
+        mapped-exprs (map #(replace-kws % transformation) exprs)]
+    (prn mapped-exprs)
+    `(-> ~df ~@mapped-exprs)))
