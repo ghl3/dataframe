@@ -56,7 +56,6 @@
    (set-index (frame data-map) index)))
 
 
-
 (defn -series-map->frame
   [srs-map]
 
@@ -98,42 +97,6 @@
   (Frame. index (into {} (for [[col srs] (column-map frame)]
                                [col (series/set-index srs index)]))))
 
-
-;
-;
-;    (apply some? (map #(= Series (type %)) (values data-map)))
-;
-;
-;
-;  (let [nrows (-> data-map vals first count)
-;        index (vec (if index index (range nrows)))
-;        data (into (sorted-map) ((map identity seq)
-;                                  (fn [[col-name col-data]]
-;                                    [col-name (series/series col-data :index index :name col-name)])
-;                                  data-map))]
-;
-;    (merge
-;      (assoc (Frame. index (keys data-map)) ::data data)
-;      data)))
-;
-;
-;
-;
-;(defn- map->srs-map
-;  [mp name index]
-;
-;  (into (sorted-map)
-;
-;        (for [[k data] mp]
-;
-;          (if (instance? Series data)
-;            (do
-;              (assert (= (:index data) index))
-;              (series/series (::series/data data)
-;                      (series/series nil :index index :name nil)))))))
-;
-
-
 (defmethod print-method Frame [df writer]
 
   (.write writer (str (class df)
@@ -160,27 +123,7 @@
   [df i]
   (if (some #(= i %) (index df))
     (series/series (map #(series/ix % i) (-> df column-map vals)) (-> df column-map keys))
-      ;(series/series vals :index (-> df ::data keys) :name i))
     nil))
-
-;
-;(defn nth
-;  "Get the 'row' of the input dataframe
-;  corresponding to the input index.
-;
-;  The 'row' is a Series corresponding to the
-;  input index applied to every column
-;  in this dataframe, where the index of
-;  the new series are the column names.
-;
-;  If no row matching the index exists,
-;  return nil
-;  "
-;  [df n]
-;  (if (< n (count (:index df)))
-;    (let [vals (map #(series/nth % n) (-> df ::data vals))]
-;      (series/series vals :index (-> df ::data keys) :name (get (:index df) n)))
-;    nil))
 
 
 (defn col
@@ -199,34 +142,4 @@
   (zip
     (index df)
     (apply zip (map series/data (vals (column-map df))))))
-
-
-;
-;
-;(defn filter
-;  "Takes a DataFrame and a list of
-;  iterables of the same length as
-;  the DataFrame.
-;
-;  Returns all rows in the input DataFrame
-;  for which all values for the input
-;  args are truthy"
-;  [df & args]
-;
-;  ;(let [filters (map and (zip args))] nil)
-;
-;
-;
-;  (let [filters (for [[k fn] (partition 2 kv-args)]
-;                  (fn (col df k)))] nil))
-;
-
-
-
-
-;(defn map->df
-;  "Takes a function, applies it to
-;  each row, and returns a dataframe
-
-;  [df fn]
 

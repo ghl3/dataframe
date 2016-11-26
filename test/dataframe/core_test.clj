@@ -1,7 +1,14 @@
 (ns dataframe.core-test
   (:require [clojure.test :refer :all]
-            [dataframe.core :refer :all]))
+            [dataframe.core :refer :all]
+            [dataframe.frame :as frame]))
 
-(deftest a-test
-  (testing "FIXME, I fail."
-    (is (= 0 1))))
+
+;
+;
+;(expect (more-of df
+;
+;                 )
+;
+;        (let [df (frame/frame {:a '(1 2 3) :b '(2 4 6)})
+;              a-min (with-df-> f (frame/filter :a (< 10)

@@ -31,9 +31,7 @@
 
   java.lang.Iterable
   (iterator [this]
-    (.iterator (zip (index data))))
-
-  )
+    (.iterator (zip (index data)))))
 
 ; Constructor
 (defn series
