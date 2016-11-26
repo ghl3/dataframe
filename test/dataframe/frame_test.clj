@@ -1,15 +1,15 @@
 (ns dataframe.frame-test
-  (:require [dataframe.frame :as frame]
+  (:require [dataframe.frame :as frame :refer [index]]
             [expectations :refer [expect more-of]]
             [dataframe.series :as series]))
 
 
 (expect '(0 1 2)
         (let [df (frame/frame {:a '(1 2 3) :b '(2 4 6)})]
-          (:index df)))
+          (index df)))
 
 
-(expect (series/series '(1 2 3) :index '(0 1 2) :name :a)
+(expect (series/series '(1 2 3) '(0 1 2))
         (-> (frame/frame {:a '(1 2 3) :b '(2 4 6)})
             (frame/col :a)))
 
@@ -19,14 +19,12 @@
             (frame/col :c)))
 
 
-(expect (more-of srs
-                 :x (:name srs)
-                 [1 2] (::series/data srs))
-        (-> (frame/frame {:a '(1 2 3) :b '(2 4 6)} :index [:x :y :z])
-            (frame/nth 0)))
+(expect (series/series [1 2] [:a :b])
+        (-> (frame/frame {:a '(1 2 3) :b '(2 4 6)} [:x :y :z])
+            (frame/ix :x)))
 
 
 (expect '([:x [1 2]] [:y [2 4]] [:z [3 6]])
-        (-> (frame/frame {:a '(1 2 3) :b '(2 4 6)} :index [:x :y :z])
+        (-> (frame/frame {:a '(1 2 3) :b '(2 4 6)} [:x :y :z])
             frame/iterrows))
 
