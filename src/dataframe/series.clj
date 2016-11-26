@@ -5,72 +5,68 @@
             [clojure.string :as str]
             [clojure.core :as core]))
 
-
 ; TODO: Use matrix
 ;(matrix/set-current-implementation :vectorz)
 
-
-; A 1-d list of data that is paired
-; with an index of the same length.
-; Items in a series can be obtained
-; either by an index or by a position
-;
-; Indices may be of the following types:
-;  - Numbers (int, floats, etc)
-;  - Strings
-;  - DataTime objects (Joda recommended)
-;  - Vectors of any of the above
-;
-; Other types may work but are not currently
-; recommended
+; A 1-d vector of data with an associated
+; index of the same length.
 ;
 ; All items in the index must be unique.
 ;
-; TODO: Make the index know it's internal position for fast lookup
-(defrecord ^{:protected true} Series [index])
+(deftype ^{:protected true} Series [data index lookup]
+
+  clojure.lang.ILookup
+  (valAt [_ k] (get lookup k))
+  (valAt [_ k or-else] (get lookup k or-else)))
+
+; Constructor
+(defn series
+
+  ([data] (series data (range (count data))))
+
+  ([data index]
+
+   (let [data (vec data)
+         index (vec index)
+         lookup (into {} (enumerate index false))]
+
+     (assert (apply distinct? index))
+     (assert (= (count data) (count index)))
+     (assert (apply = (map type data)))
+
+     (Series. data index lookup))))
 
 
-(defmethod print-method Series [srs writer]
+(defmethod print-method Series [^Series srs writer]
   (.write writer (str (class srs)
-                      (if-let [name (:name srs)] (str ": " name) "")
                       "\n"
                       (str/join "\n"
-                                (map (fn [[i d]] (str i " " d)) (zip (:index srs) (::data srs)))))))
+                                (map (fn [[i d]] (str i " " d)) (zip (. srs index) (. srs data)))))))
 
 
-(defn series
-  [data & {:keys [index name]}]
-
-  (if index (assert (apply distinct? index)))
-
-  ; TODO: Infer when we can leverage a matrix
-  (let [data-as-matrix (vec data)
-        index (vec (if index index (range (count data))))
-        index-lookup (into {} (enumerate index false))
-        srs (Series. index)]
-
-    (cond-> (assoc srs
-              ::data data-as-matrix
-              ::index-lookup index-lookup)
-            name (assoc :name name))))
-
+(defn index
+  [^Series srs]
+  (. srs index))
 
 (defn ix
   "Takes a series and an index and returns
   the item in the series corresponding
   to the input index"
-  [srs i]
-  (let [position (get (::index-lookup srs) i)]
-    (get (::data srs) position)))
-
-
-(defn nth
-  "Takes a series and an integer and
-  returns the "
-  [srs n]
-  (get (::data srs) n))
+  [^Series srs i]
+  (let [position (get (. srs lookup) i)]
+    (get (. srs data) position)))
 
 
 (defn srs->map
-  [srs]
-  (into (sorted-map) (zip (:index srs) (::data srs))))
+  [^Series srs]
+  (into (sorted-map) (zip (. srs index) (. srs data))))
+;
+;
+;(defn filter
+;  [srs & args]
+;  (let [filters (map #(every? boolean %) (zip args))
+;        data (:data srs)
+;        index (:index srs)
+;        data-filtered (vec (for [[keep? item] (zip filters data) :when keep?] item))
+;        index-filtered (vec (for [[keep? item] (zip filters index) :when keep?] item))]
+;    (series data-filtered :index index-filtered :name (:name srs))))
