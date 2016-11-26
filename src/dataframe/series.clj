@@ -13,11 +13,27 @@
 ;
 ; All items in the index must be unique.
 ;
+; https://gist.github.com/david-mcneil/1684980
+;
 (deftype ^{:protected true} Series [data index lookup]
+
+  java.lang.Object
+  (equals [this other]
+    (cond (nil? other) false
+          (not (= Series (class other))) false
+          :else (every? true?
+                        [(= (. this data ) (. other data))
+                         (= (. this index ) (. other index))])))
 
   clojure.lang.ILookup
   (valAt [_ k] (get lookup k))
-  (valAt [_ k or-else] (get lookup k or-else)))
+  (valAt [_ k or-else] (get lookup k or-else))
+
+  java.lang.Iterable
+  (iterator [this]
+    (.iterator (zip (index data))))
+
+  )
 
 ; Constructor
 (defn series
@@ -48,6 +64,10 @@
   [^Series srs]
   (. srs index))
 
+(defn data
+  [^Series srs]
+  (. srs data))
+
 (defn ix
   "Takes a series and an index and returns
   the item in the series corresponding
@@ -60,13 +80,8 @@
 (defn srs->map
   [^Series srs]
   (into (sorted-map) (zip (. srs index) (. srs data))))
-;
-;
-;(defn filter
-;  [srs & args]
-;  (let [filters (map #(every? boolean %) (zip args))
-;        data (:data srs)
-;        index (:index srs)
-;        data-filtered (vec (for [[keep? item] (zip filters data) :when keep?] item))
-;        index-filtered (vec (for [[keep? item] (zip filters index) :when keep?] item))]
-;    (series data-filtered :index index-filtered :name (:name srs))))
+
+
+(defn set-index
+  [^Series srs index]
+  (series (data srs) index))
