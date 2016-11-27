@@ -34,6 +34,8 @@
           :else (and
                   (= (. this index) (. other index))
                   (= (. this column-map) (. other column-map)))))
+  (hashCode [this]
+    (hash [(hash (. this index)) (hash (. this column-map))]))
 
   ; Return the colunn corresponding to the
   ; given key

@@ -24,6 +24,8 @@
           :else (every? true?
                         [(= (. this data ) (. other data))
                          (= (. this index ) (. other index))])))
+  (hashCode [this]
+    (hash [(hash (. this index)) (hash (. this data))]))
 
   clojure.lang.ILookup
   (valAt [_ k] (get lookup k))
