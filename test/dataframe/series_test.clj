@@ -1,6 +1,7 @@
 (ns dataframe.series-test
   (:require [dataframe.series :as srs :refer [index]]
-            [expectations :refer [expect]]))
+            [expectations :refer [expect]]
+            [dataframe.series :as series]))
 
 
 (expect '(0 1 2)
@@ -48,3 +49,17 @@
         (srs/select
           (srs/series [1 2 3 4] [:a :b :c :d])
           [false true nil "true"]))
+
+
+(expect (srs/series [116 120 125])
+        (srs/plus
+          (srs/series [1 5 10])
+          5
+          10
+          (srs/series [100 100 100])))
+
+
+(expect (srs/series [false false true])
+        (srs/gt
+          (srs/series [1 5 10])
+         5))

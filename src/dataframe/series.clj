@@ -15,17 +15,17 @@
 ;
 ; https://gist.github.com/david-mcneil/1684980
 ;
-(deftype ^{:protected true} Series [data index lookup]
+(deftype ^{:protected true} Series [values index lookup]
 
   java.lang.Object
   (equals [this other]
     (cond (nil? other) false
           (not (= Series (class other))) false
           :else (every? true?
-                        [(= (. this data ) (. other data))
+                        [(= (. this values) (. other values))
                          (= (. this index ) (. other index))])))
   (hashCode [this]
-    (hash [(hash (. this index)) (hash (. this data))]))
+    (hash [(hash (. this index)) (hash (. this values))]))
 
   clojure.lang.ILookup
   (valAt [_ k] (get lookup k))
@@ -33,7 +33,7 @@
 
   java.lang.Iterable
   (iterator [this]
-    (.iterator (zip index data)))
+    (.iterator (zip index values)))
 
 
   clojure.lang.Counted
@@ -63,16 +63,16 @@
   (.write writer (str (class srs)
                       "\n"
                       (str/join "\n"
-                                (map (fn [[i d]] (str i " " d)) (zip (. srs index) (. srs data)))))))
+                                (map (fn [[i d]] (str i " " d)) (zip (. srs index) (. srs values)))))))
 
 
 (defn index
   [^Series srs]
   (. srs index))
 
-(defn data
+(defn values
   [^Series srs]
-  (. srs data))
+  (. srs values))
 
 (defn ix
   "Takes a series and an index and returns
@@ -80,7 +80,7 @@
   to the input index"
   [^Series srs i]
   (let [position (get (. srs lookup) i)]
-    (get (. srs data) position)))
+    (get (. srs values) position)))
 
 (defn mapvals
   "Apply the function to all vals in the Series,
@@ -88,17 +88,17 @@
   transformed vals with their indices."
   [^Series srs f]
 
-  (series (map f (data srs)) (index srs)))
+  (series (map f (values srs)) (index srs)))
 
 
 (defn srs->map
   [^Series srs]
-  (into (sorted-map) (zip (. srs index) (. srs data))))
+  (into (sorted-map) (zip (. srs index) (. srs values))))
 
 
 (defn set-index
   [^Series srs index]
-  (series (data srs) index))
+  (series (values srs) index))
 
 
 (defn select
@@ -118,3 +118,44 @@
 
     (series vals idx)))
 
+
+
+; Operators
+
+
+(defn broadcast
+  [f]
+
+  (fn [x y]
+
+    (cond
+
+      (and (instance? Series x) (instance? Series y)) (do
+                                                        (assert (= (index x) (index y)))
+                                                        (series (for [[l r] (zip (values x) (values y))]
+                                                                  (f l r))
+                                                                (index x)))
+
+      (instance? Series x) (series (for [l (values x)]
+                                       (f l y))
+                                     (index x))
+
+      (instance? Series y) (series (for [r (values y)]
+                                     (f x r))
+                                   (index y))
+
+       :else (f x y))))
+
+
+(def lt (broadcast <))
+(def lte (broadcast <=))
+
+(def gt (broadcast >))
+(def gte (broadcast >=))
+
+(defn plus
+  [x & args]
+
+  (if (or (empty? args) (nil? args))
+    x
+    (apply plus (concat [((broadcast +) x (first args))] (rest args)))))
