@@ -8,10 +8,13 @@
            (java.util Map)))
 
 
-(declare rows->vectors
+(declare iterrows
+         rows->vectors
          set-index
-         -series-map->frame
-         -sequence-map->frame)
+         -list->frame
+         -map->frame
+         -map-of-series->frame
+         -map-of-sequence->frame)
 
 ; A Frame contains a map of column names to
 ; Series objects holding the underlying data
@@ -24,11 +27,28 @@
 ; matching indices
 (deftype ^{:protected true} Frame [index column-map]
 
+  java.lang.Object
+  (equals [this other]
+    (cond (nil? other) false
+          (not (= Frame (class other))) false
+          :else (and
+                  (= (. this index) (. other index))
+                  (= (. this column-map) (. other column-map)))))
+
   ; Return the colunn corresponding to the
   ; given key
   clojure.lang.ILookup
   (valAt [_ k] (get column-map k))
-  (valAt [_ k or-else] (get column-map k or-else)))
+  (valAt [_ k or-else] (get column-map k or-else))
+
+  java.lang.Iterable
+  (iterator [this]
+    (.iterator (iterrows this)))
+
+  clojure.lang.Counted
+  (count [this] (count index))
+
+  )
 
 
 ; It has an index for row-wise lookups
@@ -39,7 +59,16 @@
   - An iterable
   but all columns in the map must be one
   or the other."
-  ([^Map data-map]
+  ([data index] (set-index (frame data) index))
+  ([data]
+   (cond
+     (map? data) (-map->frame data)
+     (seq? data) (-list->frame data)
+     (vector? data) (-list->frame data)
+     :else (throw (new Exception "Encountered unexpected type for frame constructor")))))
+
+(defn -map->frame
+  [^Map data-map]
 
   ; Ensure all values have the same length
   (assert (apply = (map count (vals data-map))))
@@ -48,40 +77,52 @@
         is-series (map #(= Series %) type-list)]
 
     (cond
-      (every? true? is-series) (-series-map->frame data-map)
-      (not-any? true? is-series) (-sequence-map->frame data-map)
+      (every? true? is-series) (-map-of-series->frame data-map)
+      (not-any? true? is-series) (-map-of-sequence->frame data-map)
       :else (throw (new Exception "Mixed Series/Non-Series input to frame")))))
 
-  ([^Map data-map index]
-   (set-index (frame data-map) index)))
-
-
-(defn -series-map->frame
-  [srs-map]
+(defn -map-of-series->frame
+  [map-of-srs]
 
   ; Assert all the indices are aligned
-  (assert (apply = (map series/index (vals srs-map))))
+  (assert (apply = (map series/index (vals map-of-srs))))
 
-  (if (empty? srs-map)
+  (if (empty? map-of-srs)
     (Frame. [] {})
 
-    (let [any-index (series/index (nth (vals srs-map) 0))]
-      (Frame. any-index srs-map))))
+    (let [any-index (series/index (nth (vals map-of-srs) 0))]
+      (Frame. any-index map-of-srs))))
 
 
-(defn -sequence-map->frame
-  [seq-map]
+(defn -map-of-sequence->frame
+  [map-of-seq]
 
-  (-series-map->frame
+  (-map-of-series->frame
     (into {}
-          (for [[col seq] seq-map]
+          (for [[col seq] map-of-seq]
             [col (series/series seq)]))))
+
+
+(defn -list->frame
+  [seq-of-maps]
+
+  (let [map-of-sequences (new java.util.HashMap)]
+
+    (doall (for [mp seq-of-maps
+                 [k v] mp]
+
+             (do
+               (if (not (.. map-of-sequences (containsKey k)))
+                 (.. map-of-sequences (put k (new java.util.ArrayList))))
+             (.. map-of-sequences (get k) (add v)))))
+
+    (-map-of-sequence->frame map-of-sequences)))
+
 
 
 (defn index
   [^Frame frame]
   (. frame index))
-
 
 (defn column-map
   [^Frame frame]
@@ -90,7 +131,6 @@
 (defn columns
   [^Frame frame]
   (keys (column-map frame)))
-
 
 (defn set-index
   [^Frame frame index]
@@ -132,7 +172,6 @@
   [df col-name]
   (-> df column-map col-name))
 
-
 (defn rows->vectors
   "Return an iterator over vectors
   of key-val pairs of the row's
@@ -142,8 +181,6 @@
   (zip
     (index df)
     (apply zip (map series/data (vals (column-map df))))))
-
-
 
 (defn iterrows
   "Return an iterator over vectors
@@ -155,7 +192,6 @@
     [idx (into {} (for [[col srs] (column-map df)]
                     [col (series/ix srs idx)]))]))
 
-
 (defn maprows
   "Apply the function to all vals in the Series,
   returning a new Series consistening of these
@@ -166,3 +202,18 @@
                (f row))]
 
     (series/series rows (index df))))
+
+
+(defn select
+  [^Frame df selection]
+
+  (assert (= (count df) (count selection)))
+
+  (let [to-keep (for [[keep? [idx row-map]] (zip selection df)
+                      :when keep?]
+                  [idx row-map])
+
+        idx (map #(nth % 0) to-keep)
+        vals (map #(nth % 1) to-keep)]
+
+    (frame vals idx)))

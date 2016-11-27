@@ -35,3 +35,17 @@
         (frame/maprows
           (frame/frame {:a '(1 2 3) :b '(2 4 6)} [:x :y :z])
           (fn [row] (+ (:a row) (:b row)))))
+
+
+(expect (frame/frame {:a [1 2 3] :b [4 5 6]} [:x :y :z])
+        (frame/frame
+          [{:a 1 :b 4} {:a 2 :b 5} {:a 3 :b 6}]
+          [:x :y :z]))
+
+
+(expect (frame/frame [{:a 2 :b 6} {:a 4 :b 8}] [:x :z])
+        (frame/select
+          (frame/frame
+            {:a [1 2 3 4] :b [5 6 7 8]}
+             [:w :x :y :z])
+          [false true nil "true"]))

@@ -26,3 +26,25 @@
             srs/srs->map))
 
 
+; Test iteration
+(expect '([:a 1] [:b 2] [:c 3])
+        (map identity
+             (srs/series [1 2 3] [:a :b :c])))
+
+
+(expect (srs/series [2 4 6] [:a :b :c])
+        (srs/mapvals
+          (srs/series [1 2 3] [:a :b :c])
+          #(* 2 %)))
+
+
+(expect (srs/series [1 2 3] [:c :d :e])
+        (srs/set-index
+          (srs/series [1 2 3] [:a :b :c])
+          [:c :d :e]))
+
+
+(expect (srs/series [2 4] [:b :d])
+        (srs/select
+          (srs/series [1 2 3 4] [:a :b :c :d])
+          [false true nil "true"]))

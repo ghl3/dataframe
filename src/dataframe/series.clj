@@ -1,5 +1,5 @@
 (ns dataframe.series
-  (:refer-clojure :exclude [nth])
+  (:refer-clojure)
   (:require [clojure.core.matrix :as matrix]
             [dataframe.util :refer :all]
             [clojure.string :as str]
@@ -31,7 +31,13 @@
 
   java.lang.Iterable
   (iterator [this]
-    (.iterator (zip index data))))
+    (.iterator (zip index data)))
+
+
+  clojure.lang.Counted
+  (count [this] (count index))
+
+  )
 
 ; Constructor
 (defn series
@@ -91,3 +97,22 @@
 (defn set-index
   [^Series srs index]
   (series (data srs) index))
+
+
+(defn select
+  "Takes a series and a list of possibly-true values
+  and return a series containing only vals that
+  line up to truthy values"
+  [^Series srs selection]
+
+  (assert (= (count srs) (count selection)))
+
+  (let [to-keep (for [[keep? [idx val]] (zip selection srs)
+                      :when keep?]
+                  [idx val])
+
+        idx (map #(nth % 0) to-keep)
+        vals (map #(nth % 1) to-keep)]
+
+    (series vals idx)))
+
