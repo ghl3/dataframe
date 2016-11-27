@@ -51,6 +51,13 @@
           [false true nil "true"]))
 
 
+
+(expect (srs/series [false false true])
+        (srs/gt
+          (srs/series [1 5 10])
+          5))
+
+
 (expect (srs/series [116 120 125])
         (srs/plus
           (srs/series [1 5 10])
@@ -59,7 +66,9 @@
           (srs/series [100 100 100])))
 
 
-(expect (srs/series [false false true])
-        (srs/gt
-          (srs/series [1 5 10])
-         5))
+(expect (srs/series [false true false])
+        (series/eq (series/series [1 5 10]) 5))
+
+
+(expect (srs/series [true false true])
+        (series/neq (series/series [1 5 10]) 5))

@@ -119,10 +119,6 @@
     (series vals idx)))
 
 
-
-; Operators
-
-
 (defn broadcast
   [f]
 
@@ -147,15 +143,30 @@
        :else (f x y))))
 
 
+(defn multi-broadcast
+  [f]
+  (fn [x & args]
+
+    (loop [x x
+           args args]
+
+      (if (empty? args)
+        x
+        (recur ((broadcast f) x (first args))
+               (rest args))))))
+
 (def lt (broadcast <))
 (def lte (broadcast <=))
-
 (def gt (broadcast >))
 (def gte (broadcast >=))
 
-(defn plus
-  [x & args]
+(def plus (multi-broadcast +))
+(def sub (multi-broadcast -))
+(def mul (multi-broadcast *))
+(def div (multi-broadcast /))
 
-  (if (or (empty? args) (nil? args))
-    x
-    (apply plus (concat [((broadcast +) x (first args))] (rest args)))))
+(def eq (multi-broadcast =))
+(def neq (multi-broadcast (comp not =)))
+
+
+
