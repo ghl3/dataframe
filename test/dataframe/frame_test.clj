@@ -49,3 +49,25 @@
             {:a [1 2 3 4] :b [5 6 7 8]}
              [:w :x :y :z])
           [false true nil "true"]))
+
+
+(expect 15
+        (frame/with-context {:b 10} (+ 5 $b)))
+
+
+(expect `(do (+ 5 (clojure.core/get {:b 10} :b)))
+        (macroexpand `(frame/with-context {:b 10} (+ 5 $b))))
+
+
+(expect 20
+        (frame/with-> {:x {:y 20}} :x :y))
+
+(expect (frame/frame [{:a 3 :b 300}] [2])
+        (let [df (frame/frame {:a [1 2 3] :b [100 200 300]})]
+          (frame/with-> df (frame/select (series/gt $a 2)))))
+
+        ;(with-> df
+;        (select (lt $x 10))
+;        (mutate :z (plus $x $y))
+;        (sort-by :z :x)
+;        head)

@@ -54,7 +54,7 @@
 
      (assert (apply distinct? index))
      (assert (= (count data) (count index)))
-     (assert (apply = (map type data)))
+     (assert (apply = (map type (filter (comp not nil?) data))))
 
      (Series. data index lookup))))
 
@@ -63,8 +63,15 @@
   (.write writer (str (class srs)
                       "\n"
                       (str/join "\n"
-                                (map (fn [[i d]] (str i " " d)) (zip (. srs index) (. srs values)))))))
+                                (map
+                                  (fn [[i d]]
+                                    (str i " " (if (nil? d) "nil" d)))
+                                  (zip (. srs index) (. srs values)))))))
 
+
+(defn series?
+  [x]
+  (instance? Series x))
 
 (defn index
   [^Series srs]
@@ -109,15 +116,27 @@
 
   (assert (= (count srs) (count selection)))
 
-  (let [to-keep (for [[keep? [idx val]] (zip selection srs)
+  (let [selection (if (series? selection) (values selection) selection)
+        to-keep (for [[keep? [idx val]] (zip selection srs)
                       :when keep?]
                   [idx val])
-
         idx (map #(nth % 0) to-keep)
         vals (map #(nth % 1) to-keep)]
 
     (series vals idx)))
 
+
+
+(defn nillify
+  "Takes a binary function and returns
+  a function that short-circuits nil values."
+  [f]
+  (fn [x y]
+
+    (cond
+      (nil? x) nil
+      (nil? y) nil
+      :else (f x y))))
 
 (defn broadcast
   [f]
@@ -142,7 +161,6 @@
 
        :else (f x y))))
 
-
 (defn multi-broadcast
   [f]
   (fn [x & args]
@@ -155,18 +173,18 @@
         (recur ((broadcast f) x (first args))
                (rest args))))))
 
-(def lt (broadcast <))
-(def lte (broadcast <=))
-(def gt (broadcast >))
-(def gte (broadcast >=))
+(def lt (broadcast (nillify <)))
+(def lte (broadcast (nillify <=)))
+(def gt (broadcast (nillify >)))
+(def gte (broadcast (nillify >=)))
 
-(def plus (multi-broadcast +))
-(def sub (multi-broadcast -))
-(def mul (multi-broadcast *))
-(def div (multi-broadcast /))
+(def add (multi-broadcast (nillify +)))
+(def sub (multi-broadcast (nillify -)))
+(def mul (multi-broadcast (nillify *)))
+(def div (multi-broadcast (nillify /)))
 
-(def eq (multi-broadcast =))
-(def neq (multi-broadcast (comp not =)))
+(def eq (multi-broadcast (nillify =)))
+(def neq (multi-broadcast (comp not (nillify =))))
 
 
 

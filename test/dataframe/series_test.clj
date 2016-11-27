@@ -59,12 +59,17 @@
 
 
 (expect (srs/series [116 120 125])
-        (srs/plus
+        (srs/add
           (srs/series [1 5 10])
           5
           10
           (srs/series [100 100 100])))
 
+
+(expect (srs/series [6 nil 15])
+        (srs/add
+          (srs/series [1 nil 10])
+          5))
 
 (expect (srs/series [false true false])
         (series/eq (series/series [1 5 10]) 5))

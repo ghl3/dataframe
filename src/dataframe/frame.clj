@@ -211,7 +211,8 @@
 
   (assert (= (count df) (count selection)))
 
-  (let [to-keep (for [[keep? [idx row-map]] (zip selection df)
+  (let [selection (if (series/series? selection) (series/values selection) selection)
+        to-keep (for [[keep? [idx row-map]] (zip selection df)
                       :when keep?]
                   [idx row-map])
 
@@ -251,3 +252,9 @@
         exprs (map replace-fn body)]
 
     `(do ~@exprs)))
+
+
+(defmacro with->
+  [df & exprs]
+  `(with-context ~df
+                (-> ~df ~@exprs)))
