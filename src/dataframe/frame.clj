@@ -8,7 +8,7 @@
            (java.util Map)))
 
 
-(declare iterrows
+(declare rows->vectors
          set-index
          -series-map->frame
          -sequence-map->frame)
@@ -105,7 +105,7 @@
                       "\n"
                       (str/join "\n" (map
                                        (fn [[idx row]] (str idx \tab (str/join \tab row)))
-                                       (iterrows df))))))
+                                       (rows->vectors df))))))
 
 
 (defn ix
@@ -133,7 +133,7 @@
   (-> df column-map col-name))
 
 
-(defn iterrows
+(defn rows->vectors
   "Return an iterator over vectors
   of key-val pairs of the row's
   index value and the value of that
@@ -143,3 +143,26 @@
     (index df)
     (apply zip (map series/data (vals (column-map df))))))
 
+
+
+(defn iterrows
+  "Return an iterator over vectors
+  of key-val pairs of the row's
+  index value and the value of that
+  row as a map"
+  [df]
+  (for [idx (index df)]
+    [idx (into {} (for [[col srs] (column-map df)]
+                    [col (series/ix srs idx)]))]))
+
+
+(defn maprows
+  "Apply the function to all vals in the Series,
+  returning a new Series consistening of these
+  transformed vals with their indices."
+  [^Frame df f]
+
+  (let [rows (for [[_ row] (iterrows df)]
+               (f row))]
+
+    (series/series rows (index df))))

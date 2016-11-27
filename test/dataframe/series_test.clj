@@ -20,6 +20,9 @@
         (let [my-srs (srs/series '(1 2 3) '("A" "B" "A"))]
           (srs/ix my-srs "D")))
 
+
 (expect {:a 1 :b 2 :c 3}
         (-> (srs/series '(1 2 3) '(:a :b :c))
             srs/srs->map))
+
+

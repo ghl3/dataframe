@@ -24,7 +24,14 @@
             (frame/ix :x)))
 
 
-(expect '([:x [1 2]] [:y [2 4]] [:z [3 6]])
+(expect '( [:x {:a 1 :b 2}]
+           [:y {:a 2 :b 4}]
+           [:z {:a 3 :b 6}])
         (-> (frame/frame {:a '(1 2 3) :b '(2 4 6)} [:x :y :z])
             frame/iterrows))
 
+
+(expect (series/series [3 6 9] [:x :y :z])
+        (frame/maprows
+          (frame/frame {:a '(1 2 3) :b '(2 4 6)} [:x :y :z])
+          (fn [row] (+ (:a row) (:b row)))))

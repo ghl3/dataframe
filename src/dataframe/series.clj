@@ -31,7 +31,7 @@
 
   java.lang.Iterable
   (iterator [this]
-    (.iterator (zip (index data)))))
+    (.iterator (zip index data))))
 
 ; Constructor
 (defn series
@@ -73,6 +73,14 @@
   [^Series srs i]
   (let [position (get (. srs lookup) i)]
     (get (. srs data) position)))
+
+(defn mapvals
+  "Apply the function to all vals in the Series,
+  returning a new Series consistening of these
+  transformed vals with their indices."
+  [^Series srs f]
+
+  (series (map f (data srs)) (index srs)))
 
 
 (defn srs->map
