@@ -5,6 +5,8 @@
             [clojure.string :as str]
             [clojure.core :as core]))
 
+(declare series)
+
 ; TODO: Use matrix
 ;(matrix/set-current-implementation :vectorz)
 
@@ -35,11 +37,25 @@
   (iterator [this]
     (.iterator (zip index values)))
 
-
   clojure.lang.Counted
   (count [this] (count index))
 
-  )
+  clojure.lang.IPersistentCollection
+  (seq [this] (zip (. this index) (. this values)))
+  (cons [this other]
+    "Takes a vector pair of [idx row],
+    where row is a map, and returns a
+    Frame extended by one row."
+    (assert vector? other)
+    (assert 2 (count other))
+    (let [[idx val] other]
+      (series
+        (conj values val)
+        (conj index idx))))
+
+  (empty [this] (empty? index))
+
+  (equiv [this other] (.. this (equals other))))
 
 ; Constructor
 (defn series

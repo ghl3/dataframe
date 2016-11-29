@@ -8,7 +8,8 @@
            (java.util Map)))
 
 
-(declare iterrows
+(declare frame
+         iterrows
          rows->vectors
          set-index
          -list->frame
@@ -50,7 +51,38 @@
   clojure.lang.Counted
   (count [this] (count index))
 
-  )
+  clojure.lang.IPersistentCollection
+  (seq [this] (iterrows this))
+  (cons [this other]
+    "Takes a vector pair of [idx row],
+    where row is a map, and returns a
+    Frame extended by one row."
+    (assert vector? other)
+    (assert 2 (count other))
+    (let [[idx m] other]
+      (assoc this idx m)))
+
+  (empty [this] (empty? index))
+
+  (equiv [this other] (.. this (equals other)))
+
+  clojure.lang.Associative
+  ; Associativity is defined in terms of the columns
+  (containsKey [this key]
+    (contains? column-map key))
+  (entryAt [this key]
+    (.. column-map (entryAt key)))
+  (assoc [this idx row-map]
+    "Takes a key of the index type and map
+    of column names to values and return a
+    frame with a new row added corresponding
+    to the input index and column map."
+    (assert map? val)
+    (let [new-columns (into {}
+                            (for [[k srs] column-map]
+                              [k (conj srs [idx (get row-map k nil)])]))
+          new-index (conj index idx)]
+      (frame new-columns new-index))))
 
 
 ; It has an index for row-wise lookups
@@ -75,13 +107,15 @@
   ; Ensure all values have the same length
   (assert (apply = (map count (vals data-map))))
 
-  (let [type-list (map type (vals data-map))
-        is-series (map #(= Series %) type-list)]
+  (let [k->srs (into {}
+                     (for [[k xs] data-map]
 
-    (cond
-      (every? true? is-series) (-map-of-series->frame data-map)
-      (not-any? true? is-series) (-map-of-sequence->frame data-map)
-      :else (throw (new Exception "Mixed Series/Non-Series input to frame")))))
+                       (if (series/series? xs)
+                         [k xs]
+                         [k (series/series xs)])))]
+
+    (-map-of-series->frame k->srs)))
+
 
 (defn -map-of-series->frame
   [map-of-srs]
