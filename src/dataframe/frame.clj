@@ -26,6 +26,12 @@
 ; A Frame is a map of column names to Series
 ; objects, where each Series must have
 ; matching indices
+;
+; TODO: Make a Frame protocol
+; - Have it implement index, col, ix, columns
+; - Implement these interfaces in terms of it
+; - Create multiple implementations of this Protocol
+; - (Matrix Frame, HeteroFrame)
 (deftype ^{:protected true} Frame [index column-map]
 
   java.lang.Object

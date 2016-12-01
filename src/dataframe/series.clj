@@ -17,6 +17,11 @@
 ;
 ; https://gist.github.com/david-mcneil/1684980
 ;
+; TODO: Make a Series protocol
+; - Have it implement index, values, and ix
+; - Implement the below interfaces in terms of those primitives
+; - Create multiple Series implementations (map-series, vector-series)
+;
 (deftype ^{:protected true} Series [values index lookup]
 
   java.lang.Object
