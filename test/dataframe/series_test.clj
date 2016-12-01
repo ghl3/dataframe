@@ -1,6 +1,6 @@
 (ns dataframe.series-test
   (:require [dataframe.series :as srs :refer [index]]
-            [expectations :refer [expect]]
+            [expectations :refer [expect more-of]]
             [dataframe.series :as series]))
 
 
@@ -77,3 +77,8 @@
 
 (expect (srs/series [true false true])
         (series/neq (series/series [1 5 10]) 5))
+
+(expect (more-of srs
+                 (series/series [1 2] [0 1]) (series/head srs 2)
+                 (series/series [6 7] [5 6]) (series/tail srs 2))
+        (series/series [1 2 3 4 5 6 7]))

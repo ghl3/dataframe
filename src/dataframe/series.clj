@@ -1,28 +1,12 @@
 (ns dataframe.series
   (:refer-clojure)
-  (:require [clojure.core.matrix :as matrix]
-            [dataframe.util :refer :all]
-            [clojure.string :as str]
-            [clojure.core :as core]))
+  (:require [dataframe.util :refer :all]
+            [clojure.string :as str])
+  (:import (clojure.lang IPersistentVector IPersistentMap)))
 
 (declare series)
 
-; TODO: Use matrix
-;(matrix/set-current-implementation :vectorz)
-
-; A 1-d vector of data with an associated
-; index of the same length.
-;
-; All items in the index must be unique.
-;
-; https://gist.github.com/david-mcneil/1684980
-;
-; TODO: Make a Series protocol
-; - Have it implement index, values, and ix
-; - Implement the below interfaces in terms of those primitives
-; - Create multiple Series implementations (map-series, vector-series)
-;
-(deftype ^{:protected true} Series [values index lookup]
+(deftype ^{:protected true} Series [^IPersistentVector values ^IPersistentVector index ^IPersistentMap lookup]
 
   java.lang.Object
   (equals [this other]
@@ -147,6 +131,35 @@
     (series vals idx)))
 
 
+(defn subset
+  [^Series srs start end]
+
+  (assert (<= start end))
+
+  (let [last (count srs)
+        srs-begin (min (max 0 start) last)
+        srs-end (min (max 0 end) last)]
+
+    (series
+      (subvec (values srs) srs-begin srs-end)
+      (subvec (index srs) srs-begin srs-end)
+      )))
+
+
+(defn head
+  ""
+  ([^Series srs] (head srs 5))
+  ([^Series srs n] (subset srs 0 n)))
+
+
+(defn tail
+  ""
+  ([^Series srs] (tail srs 5))
+  ([^Series srs n]
+   (let [start (- (count srs) n)
+         end (count srs)]
+     (subset srs start end))))
+
 
 (defn nillify
   "Takes a binary function and returns
@@ -161,26 +174,20 @@
 
 (defn broadcast
   [f]
-
   (fn [x y]
-
     (cond
-
       (and (instance? Series x) (instance? Series y)) (do
                                                         (assert (= (index x) (index y)))
                                                         (series (for [[l r] (zip (values x) (values y))]
                                                                   (f l r))
                                                                 (index x)))
-
       (instance? Series x) (series (for [l (values x)]
-                                       (f l y))
-                                     (index x))
-
+                                     (f l y))
+                                   (index x))
       (instance? Series y) (series (for [r (values y)]
                                      (f x r))
                                    (index y))
-
-       :else (f x y))))
+      :else (f x y))))
 
 (defn multi-broadcast
   [f]

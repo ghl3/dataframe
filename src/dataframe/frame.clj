@@ -22,16 +22,19 @@
 ; as well as an index
 ;(defrecord ^{:protected true} Frame [index columns])
 
+; TODO: Use matrix
+;(matrix/set-current-implementation :vectorz)
+
+; A 1-d vector of data with an associated
+; index of the same length.
+;
+; All items in the index must be unique.
+;
+; https://gist.github.com/david-mcneil/1684980
 
 ; A Frame is a map of column names to Series
 ; objects, where each Series must have
 ; matching indices
-;
-; TODO: Make a Frame protocol
-; - Have it implement index, col, ix, columns
-; - Implement these interfaces in terms of it
-; - Create multiple implementations of this Protocol
-; - (Matrix Frame, HeteroFrame)
 (deftype ^{:protected true} Frame [index column-map]
 
   java.lang.Object
