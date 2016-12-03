@@ -2,9 +2,10 @@
   (:refer-clojure)
   (:require [dataframe.util :refer :all]
             [clojure.string :as str])
-  (:import (clojure.lang IPersistentVector IPersistentMap)))
+  (:import (clojure.lang IPersistentVector IPersistentMap MapEntry)))
 
-(declare series)
+(declare series
+         update-key)
 
 ; A Series is a data structure that maps an index
 ; to valus.  It supports:
@@ -24,13 +25,9 @@
           (not (= Series (class other))) false
           :else (every? true?
                         [(= (. this values) (. other values))
-                         (= (. this index ) (. other index))])))
+                         (= (. this index) (. other index))])))
   (hashCode [this]
     (hash [(hash (. this index)) (hash (. this values))]))
-
-  clojure.lang.ILookup
-  (valAt [_ k] (get lookup k))
-  (valAt [_ k or-else] (get lookup k or-else))
 
   java.lang.Iterable
   (iterator [this]
@@ -42,19 +39,32 @@
   clojure.lang.IPersistentCollection
   (seq [this] (zip (. this index) (. this values)))
   (cons [this other]
-    "Takes a vector pair of [idx row],
-    where row is a map, and returns a
-    Frame extended by one row."
-    (assert vector? other)
+    "Return a sequence of key-val pairs"
+    (assert (vector? other))
     (assert 2 (count other))
-    (let [[idx val] other]
-      (series
-        (conj values val)
-        (conj index idx))))
-
+    (cons (.iterator this) other))
   (empty [this] (empty? index))
+  (equiv [this other] (.. this (equals other)))
 
-  (equiv [this other] (.. this (equals other))))
+  clojure.lang.ILookup
+  (valAt [this i] (.. this (valAt i nil)))
+  (valAt [this i or-else] (if-let [n (get (. this lookup) i)]
+                            (nth (. this values) n)
+                            or-else))
+
+  clojure.lang.Associative
+  (containsKey [this key]
+    (contains? lookup key))
+  (entryAt [this key]
+    (MapEntry/create key (.. this (valAt key))))
+  (assoc [this idx val]
+    "Takes a key of the index type and map
+    of column names to values and return a
+    frame with a new row added corresponding
+    to the input index and column map."
+    (if (contains? this idx)
+      (update-key this idx val)
+      (series (conj values val) (conj index idx)))))
 
 ; Constructor
 (defn series
@@ -100,9 +110,29 @@
   "Takes a series and an index and returns
   the item in the series corresponding
   to the input index"
-  [^Series srs i]
-  (let [position (get (. srs lookup) i)]
-    (get (. srs values) position)))
+  ([^Series srs i] (get srs i nil))
+  ([^Series srs i or-else] (get srs i or-else)))
+
+
+(defn update-key
+  "If the series has the given key,
+  return a series with the value
+  for that key updated to the given
+  value.
+  Otherwise, do nothing and return
+  the given series"
+  [^Series srs k v]
+  (if (contains? srs k)
+    (series (assoc (values srs) (.. srs lookup (get k)) v)
+            (index srs))
+    srs))
+
+
+(defn update-index
+  "Return a series with the same values
+  but with the updated index."
+  [^Series srs index]
+  (series (values srs) (vec index)))
 
 
 (defn mapvals
@@ -110,15 +140,7 @@
   returning a new Series consistening of these
   transformed vals with their indices."
   [^Series srs f]
-
   (series (map f (values srs)) (index srs)))
-
-
-(defn update-index
-  "Return a series with the same values
-  but with the updated index."
-  [^Series srs index]
-  (series (values srs) index))
 
 
 (defn select

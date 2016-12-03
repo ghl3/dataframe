@@ -1,5 +1,5 @@
 (ns dataframe.series-test
-  (:require [dataframe.series :as srs :refer [index]]
+  (:require [dataframe.series :as srs :refer [series index]]
             [expectations :refer [expect more-of]]
             [dataframe.series :as series]))
 
@@ -15,6 +15,10 @@
 (expect nil
         (let [my-srs (srs/series '(1 2 3)'("A" "B" "C"))]
           (srs/ix my-srs "D")))
+
+(expect "Bar"
+        (let [my-srs (srs/series '(1 2 3)'("A" "B" "C"))]
+          (srs/ix my-srs "D" "Bar")))
 
 
 (expect AssertionError
@@ -74,7 +78,63 @@
 
 (expect (more-of srs
                  (series/series [1] [0]) (series/subset srs 0 1)
-                 (series/series [3 4 5] [2 3 4]) (series/subset srs 2 4)
+                 (series/series [3 4] [2 3]) (series/subset srs 2 4)
                  (series/series [1 2] [0 1]) (series/head srs 2)
                  (series/series [6 7] [5 6]) (series/tail srs 2))
         (series/series [1 2 3 4 5 6 7]))
+
+
+(expect 2
+        (.valAt (series [1 2 3] [:a :b :c]) :b))
+
+(expect true
+        (contains? (series [1 2 3] [:a :b :c]) :b))
+
+(expect false
+        (contains? (series [1 2 3] [:a :b :c]) :d))
+
+
+(expect [:b 2]
+        (.entryAt (series [1 2 3] [:a :b :c]) :b))
+
+
+(expect (series [1 2 3 4 5 6] [:a :b :c :d :e :f])
+        (assoc
+          (series [1 2 3 4 5] [:a :b :c :d :e])
+          :f 6))
+
+(expect (series [1 10 3 4 5] [:a :b :c :d :e])
+        (assoc
+          (series [1 2 3 4 5] [:a :b :c :d :e])
+          :b 10))
+
+(expect 2
+        (get (series [1 2 3] [:a :b :c]) :b))
+
+
+(expect '([:a 1] [:b 2] [:c 3])
+        (seq (series/series [1 2 3] [:a :b :c])))
+
+
+(expect '([:d 4] [:a 1] [:b 2] [:c 3])
+        (cons [:d 4] (series/series [1 2 3] [:a :b :c])))
+
+
+(expect true
+        (= (series/series [1 2 3] [:a :b :c])
+           (series/series [1 2 3] [:a :b :c])))
+
+(expect false
+        (= (series/series [1 2 3] [:a :b :d])
+           (series/series [1 2 3] [:a :b :c])))
+
+; Equality checks order
+(expect false
+        (= (series/series [3 2 1] [:c :b :a])
+           (series/series [1 2 3] [:a :b :c])))
+
+
+; Check that we iterate as pairs of index->val
+(expect '([:a 1] [:b 2] [:c 3])
+        (for [x  (series/series [1 2 3] [:a :b :c])]
+          x))
