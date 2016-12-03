@@ -180,7 +180,7 @@
 (defn set-index
   [^Frame frame index]
   (Frame. index (into {} (for [[col srs] (column-map frame)]
-                               [col (series/set-index srs index)]))))
+                           [col (series/update-index srs index)]))))
 
 (defmethod print-method Frame [df writer]
 

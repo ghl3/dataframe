@@ -21,12 +21,6 @@
         (let [my-srs (srs/series '(1 2 3) '("A" "B" "A"))]
           (srs/ix my-srs "D")))
 
-
-(expect {:a 1 :b 2 :c 3}
-        (-> (srs/series '(1 2 3) '(:a :b :c))
-            srs/srs->map))
-
-
 ; Test iteration
 (expect '([:a 1] [:b 2] [:c 3])
         (map identity
@@ -40,7 +34,7 @@
 
 
 (expect (srs/series [1 2 3] [:c :d :e])
-        (srs/set-index
+        (srs/update-index
           (srs/series [1 2 3] [:a :b :c])
           [:c :d :e]))
 
@@ -79,6 +73,8 @@
         (series/neq (series/series [1 5 10]) 5))
 
 (expect (more-of srs
+                 (series/series [1] [0]) (series/subset srs 0 1)
+                 (series/series [3 4 5] [2 3 4]) (series/subset srs 2 4)
                  (series/series [1 2] [0 1]) (series/head srs 2)
                  (series/series [6 7] [5 6]) (series/tail srs 2))
         (series/series [1 2 3 4 5 6 7]))

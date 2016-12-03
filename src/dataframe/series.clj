@@ -6,7 +6,17 @@
 
 (declare series)
 
-(deftype ^{:protected true} Series [^IPersistentVector values ^IPersistentVector index ^IPersistentMap lookup]
+; A Series is a data structure that maps an index
+; to valus.  It supports:
+; - Order 1 access to values by index
+; - Order 1 access to [index value] pairs by position (nth)
+; - Maintaining the order of [index value] pairs for iteration
+;
+; As viewed as a Clojure Persistent collection, it is a collection
+; of [index value] pairs (as seen by seq and cons)
+(deftype ^{:protected true} Series [^IPersistentVector values
+                                    ^IPersistentVector index
+                                    ^IPersistentMap lookup]
 
   java.lang.Object
   (equals [this other]
@@ -94,6 +104,7 @@
   (let [position (get (. srs lookup) i)]
     (get (. srs values) position)))
 
+
 (defn mapvals
   "Apply the function to all vals in the Series,
   returning a new Series consistening of these
@@ -103,12 +114,9 @@
   (series (map f (values srs)) (index srs)))
 
 
-(defn srs->map
-  [^Series srs]
-  (into (sorted-map) (zip (. srs index) (. srs values))))
-
-
-(defn set-index
+(defn update-index
+  "Return a series with the same values
+  but with the updated index."
   [^Series srs index]
   (series (values srs) index))
 
@@ -132,6 +140,14 @@
 
 
 (defn subset
+  "Return a subseries defined
+  the start and end indices (which are
+  integer like) using the index order.
+
+  The subset is inclusive on the start
+  but exclusive on the end, meaning that
+  (subset srs 0 (count srs)) returns the
+  same series"
   [^Series srs start end]
 
   (assert (<= start end))
@@ -147,13 +163,23 @@
 
 
 (defn head
-  ""
+  "Return a subseries consisting of the
+  first n elements of the input series
+  using the index order.
+
+  If n > (count srs), return the
+  whole series."
   ([^Series srs] (head srs 5))
   ([^Series srs n] (subset srs 0 n)))
 
 
 (defn tail
-  ""
+  "Return a subseries consisting of the
+  last n elements of the input series
+  using the index order.
+
+  If n > (count srs), return the
+  whole series."
   ([^Series srs] (tail srs 5))
   ([^Series srs n]
    (let [start (- (count srs) n)
@@ -161,7 +187,7 @@
      (subset srs start end))))
 
 
-(defn nillify
+(defn ^{:protected true}  nillify
   "Takes a binary function and returns
   a function that short-circuits nil values."
   [f]
@@ -172,7 +198,7 @@
       (nil? y) nil
       :else (f x y))))
 
-(defn broadcast
+(defn ^{:protected true} broadcast
   [f]
   (fn [x y]
     (cond
@@ -189,7 +215,7 @@
                                    (index y))
       :else (f x y))))
 
-(defn multi-broadcast
+(defn ^{:protected true} multi-broadcast
   [f]
   (fn [x & args]
 
