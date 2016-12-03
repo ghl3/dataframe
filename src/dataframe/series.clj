@@ -14,7 +14,8 @@
 ; - Maintaining the order of [index value] pairs for iteration
 ;
 ; As viewed as a Clojure Persistent collection, it is a collection
-; of [index value] pairs (as seen by seq and cons)
+; of [index value] pairs.
+; It is also Associative between the index keys and its values
 (deftype ^{:protected true} Series [^IPersistentVector values
                                     ^IPersistentVector index
                                     ^IPersistentMap lookup]
@@ -37,12 +38,15 @@
   (count [this] (count index))
 
   clojure.lang.IPersistentCollection
-  (seq [this] (zip (. this index) (. this values)))
+  (seq [this] (if (empty? index)
+                nil
+                (zip (. this index) (. this values))))
   (cons [this other]
     "Return a sequence of key-val pairs"
     (assert (vector? other))
     (assert 2 (count other))
-    (cons (.iterator this) other))
+    (assoc this (first other) (last other)))
+    ;(cons (.iterator this) other))
   (empty [this] (empty? index))
   (equiv [this other] (.. this (equals other)))
 
@@ -128,7 +132,7 @@
     srs))
 
 
-(defn update-index
+(defn set-index
   "Return a series with the same values
   but with the updated index."
   [^Series srs index]

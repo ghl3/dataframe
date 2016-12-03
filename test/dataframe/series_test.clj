@@ -38,7 +38,7 @@
 
 
 (expect (srs/series [1 2 3] [:c :d :e])
-        (srs/update-index
+        (srs/set-index
           (srs/series [1 2 3] [:a :b :c])
           [:c :d :e]))
 
@@ -114,6 +114,10 @@
 
 (expect '([:a 1] [:b 2] [:c 3])
         (seq (series/series [1 2 3] [:a :b :c])))
+
+
+(expect '([:d 4] [:a 1] [:b 2] [:c 3])
+        (cons [:d 4] (series/series [1 2 3] [:a :b :c])))
 
 
 (expect '([:d 4] [:a 1] [:b 2] [:c 3])
