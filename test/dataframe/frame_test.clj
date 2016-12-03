@@ -1,7 +1,15 @@
 (ns dataframe.frame-test
   (:require [dataframe.frame :as frame :refer [index]]
-            [expectations :refer [expect more-of]]
+            [expectations :refer [expect expect-focused more-of]]
             [dataframe.series :as series]))
+
+
+; Constructors
+
+(expect (frame/frame {:a '(1 2 3) :b '(2 4 6)} [:x :y :z])
+        (frame/frame [[:x {:a 1 :b 2}]
+                      [:y {:a 2 :b 4}]
+                      [:z {:a 3 :b 6}]]))
 
 
 (expect '(0 1 2)
@@ -30,6 +38,26 @@
         (-> (frame/frame {:a '(1 2 3) :b '(2 4 6)} [:x :y :z])
             frame/iterrows))
 
+; Assert the iterator over a datafram
+; iterates over [index row-map] pairs
+(expect '( [:x {:a 1 :b 2}]
+           [:y {:a 2 :b 4}]
+           [:z {:a 3 :b 6}])
+        (for [x (frame/frame {:a '(1 2 3) :b '(2 4 6)} [:x :y :z])]
+          x))
+
+(expect (frame/frame [[:x {:a 1 :b 2}]
+                      [:y {:a 2 :b 4}]
+                      [:z {:a 3 :b 6}]])
+        (conj
+          (frame/frame {:a '(1 2) :b '(2 4)} [:x :y])
+          [:z {:a 3 :b 6}]))
+
+(expect false
+        (empty? (frame/frame {:a '(1 2) :b '(2 4)} [:x :y])))
+
+(expect true
+        (empty? (frame/frame {} [])))
 
 (expect (series/series [3 6 9] [:x :y :z])
         (frame/maprows
@@ -51,17 +79,20 @@
           [false true nil "true"]))
 
 
-(expect 15
-        (frame/with-context {:b 10} (+ 5 $b)))
+(expect (series/series [15])
+        (frame/with-context
+          (frame/frame [{:b 10}])
+          (series/add 5 $b)))
 
 
-(expect `(do (+ 5 (clojure.core/get {:b 10} :b)))
+(expect `(do (+ 5 (dataframe.frame/col {:b 10} :b)))
         (macroexpand `(frame/with-context {:b 10} (+ 5 $b))))
 
 (expect 20
         (frame/with-> {:x {:y 20}} :x :y))
 
 (expect (frame/frame [{:a 3 :b 300}] [2])
+
         (let [df (frame/frame {:a [1 2 3] :b [100 200 300]})]
           (frame/with-> df (frame/select (series/gt $a 2)))))
 
@@ -71,7 +102,7 @@
 
 (expect (frame/frame {:a [1 2 3] :b [100 200 300] :c [10 20 30]})
         (let [df (frame/frame {:a [1 2] :b [100 200] :c [10 20]})]
-          (assoc df 2 {:a 3 :b 300 :c 30})))
+          (frame/assoc-index df 2 {:a 3 :b 300 :c 30})))
 
 
         ;(with-> df
@@ -79,3 +110,19 @@
 ;        (assoc :z (plus $x $y))
 ;        (sort-by :z :x)
 ;        head)
+
+(expect 3
+        (count (frame/frame {:a '(1 2 3) :b '(2 4 6)})))
+
+
+(expect true
+        (= (frame/frame {:a '(1 2 3) :b '(2 4 6)})
+           (frame/frame {:a '(1 2 3) :b '(2 4 6)})))
+
+(expect true
+        (= (frame/frame {:b '(2 4 6) :a '(1 2 3)})
+           (frame/frame {:a '(1 2 3) :b '(2 4 6)})))
+
+(expect false
+        (= (frame/frame {:a '(1 2 5) :b '(2 4 6)})
+           (frame/frame {:a '(1 2 3) :b '(2 4 6)})))

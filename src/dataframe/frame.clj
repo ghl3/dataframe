@@ -4,37 +4,38 @@
             [clojure.string :as str]
             [dataframe.series :as series]
             [dataframe.util :refer :all])
-  (:import (dataframe.series Series)
-           (java.util Map)))
+  (:import (java.util Map)))
 
 
 (declare frame
+         assoc-index
          iterrows
          rows->vectors
          set-index
-         -list->frame
+         -seq->frame
+         -list-of-row-maps->frame
+         -list-of-index-row-pairs->frame
          -map->frame
          -map-of-series->frame
          -map-of-sequence->frame)
 
-; A Frame contains a map of column names to
-; Series objects holding the underlying data
-; as well as an index
-;(defrecord ^{:protected true} Frame [index columns])
 
-; TODO: Use matrix
-;(matrix/set-current-implementation :vectorz)
-
-; A 1-d vector of data with an associated
-; index of the same length.
+; A Frame can be interpreted as:
+; - A Map of index keys to maps of values
+; - A Map of column names to Series as columns
 ;
-; All items in the index must be unique.
+; A Frame supports
+; - Order 1 lookup of row maps by index key
+; - Order 1 lookup of [index row] pairs by position (nth)
+; - Order 1 lookup of columns by name
 ;
-; https://gist.github.com/david-mcneil/1684980
-
-; A Frame is a map of column names to Series
-; objects, where each Series must have
-; matching indices
+; A Frame does not guarantee column order
+;
+; As viewed as a Clojure PersistentColleection, it is a
+; collection of [index row] pairs, where a row is a map
+; of [column val] pairs (for the purpose of seq and cons).
+; As viewed as an association, it is a map from index
+; keys to row maps.
 (deftype ^{:protected true} Frame [index column-map]
 
   java.lang.Object
@@ -47,12 +48,6 @@
   (hashCode [this]
     (hash [(hash (. this index)) (hash (. this column-map))]))
 
-  ; Return the colunn corresponding to the
-  ; given key
-  clojure.lang.ILookup
-  (valAt [_ k] (get column-map k))
-  (valAt [_ k or-else] (get column-map k or-else))
-
   java.lang.Iterable
   (iterator [this]
     (.iterator (iterrows this)))
@@ -61,64 +56,47 @@
   (count [this] (count index))
 
   clojure.lang.IPersistentCollection
-  (seq [this] (iterrows this))
+  (seq [this] (if (empty? index)
+                nil
+                (iterrows this)))
   (cons [this other]
     "Takes a vector pair of [idx row],
     where row is a map, and returns a
     Frame extended by one row."
     (assert vector? other)
     (assert 2 (count other))
+    (assert map? (last other))
     (let [[idx m] other]
-      (assoc this idx m)))
-
+      (assoc-index this idx m)))
   (empty [this] (empty? index))
-
-  (equiv [this other] (.. this (equals other)))
-
-  clojure.lang.Associative
-  ; Associativity is defined in terms of the columns
-  (containsKey [this key]
-    (contains? column-map key))
-  (entryAt [this key]
-    (.. column-map (entryAt key)))
-  (assoc [this idx row-map]
-    "Takes a key of the index type and map
-    of column names to values and return a
-    frame with a new row added corresponding
-    to the input index and column map."
-    (assert map? val)
-    (let [new-columns (into {}
-                            (for [[k srs] column-map]
-                              [k (conj srs [idx (get row-map k nil)])]))
-          new-index (conj index idx)]
-      (frame new-columns new-index))))
+  (equiv [this other] (.. this (equals other))))
 
 
 ; It has an index for row-wise lookups
 (defn frame
-  "Takes a map of column names to columns.
-  A Column may be one of:
-  - A Series
-  - An iterable
-  but all columns in the map must be one
-  or the other."
+  "Create a Frame from on of the following inputs:
+
+  - A map of column keys to sequences representing column values
+  - A map of column keys to Series reprsenting column values
+  - A sequence of index keys to maps representing rows
+  "
   ([data index] (set-index (frame data) index))
   ([data]
    (cond
      (map? data) (-map->frame data)
-     (seq? data) (-list->frame data)
-     (vector? data) (-list->frame data)
+     (seq? data) (-seq->frame data)
+     (vector? data) (-seq->frame data)
      :else (throw (new Exception "Encountered unexpected type for frame constructor")))))
 
-(defn -map->frame
+(defn ^{:protected true} -map->frame
   [^Map data-map]
 
   ; Ensure all values have the same length
-  (assert (apply = (map count (vals data-map))))
+  (if (not (empty? data-map))
+    (assert (apply = (map count (vals data-map)))))
 
   (let [k->srs (into {}
                      (for [[k xs] data-map]
-
                        (if (series/series? xs)
                          [k xs]
                          [k (series/series xs)])))]
@@ -126,11 +104,15 @@
     (-map-of-series->frame k->srs)))
 
 
-(defn -map-of-series->frame
+(defn ^{:protected true} -map-of-series->frame
+  "Takes a map of column keys to Series objects
+  representing column values.
+  Return a Frame."
   [map-of-srs]
 
   ; Assert all the indices are aligned
-  (assert (apply = (map series/index (vals map-of-srs))))
+  (if (not (empty? map-of-srs))
+    (assert (apply = (map series/index (vals map-of-srs)))))
 
   (if (empty? map-of-srs)
     (Frame. [] {})
@@ -139,30 +121,47 @@
       (Frame. any-index map-of-srs))))
 
 
-(defn -map-of-sequence->frame
-  [map-of-seq]
+(defn ^{:protected true} -seq->frame
+  "Take a list of either maps
+  (each representing a row)
+  or pairs of index->maps.
+  Return a Frame."
+  [s]
+  (if (map? (first s))
+    (-list-of-row-maps->frame s)
+    (-list-of-index-row-pairs->frame s)))
 
-  (-map-of-series->frame
-    (into {}
-          (for [[col seq] map-of-seq]
-            [col (series/series seq)]))))
+
+(defn ^{:protected true} -list-of-row-maps->frame
+  "Take a list of maps (each representing a row
+  with keys as columns and vals as row values)
+  and return a Frame"
+  [row-maps]
+  (let [index (range (count row-maps))
+        columns (into #{} (flatten (map keys row-maps)))
+        col->vec (into {} (for [col columns]
+                            [col (vec (map #(get % col nil) row-maps))]))
+        col->srs (into {} (for [[col vals] col->vec]
+                            [col (series/series vals index)]))]
+
+    (-map-of-series->frame col->srs)))
 
 
-(defn -list->frame
-  [seq-of-maps]
+(defn ^{:protected true} -list-of-index-row-pairs->frame
+  "Take a list of pairs
+  of index values to row-maps
+  and return a Frame."
+  [seq-of-idx->maps]
 
-  (let [map-of-sequences (new java.util.HashMap)]
+  (let [index (into [] (map first seq-of-idx->maps))
+        row-maps (map last seq-of-idx->maps)
+        columns (into #{} (flatten (map keys row-maps)))
+        col->vec (into {} (for [col columns]
+                            [col (vec (map #(get % col nil) row-maps))]))
+        col->srs (into {} (for [[col vals] col->vec]
+                   [col (series/series vals index)]))]
 
-    (doall (for [mp seq-of-maps
-                 [k v] mp]
-
-             (do
-               (if (not (.. map-of-sequences (containsKey k)))
-                 (.. map-of-sequences (put k (new java.util.ArrayList))))
-             (.. map-of-sequences (get k) (add v)))))
-
-    (-map-of-sequence->frame map-of-sequences)))
-
+    (-map-of-series->frame col->srs)))
 
 
 (defn index
@@ -180,7 +179,23 @@
 (defn set-index
   [^Frame frame index]
   (Frame. index (into {} (for [[col srs] (column-map frame)]
-                           [col (series/update-index srs index)]))))
+                           [col (series/set-index srs index)]))))
+
+(defn assoc-index
+  "Takes a key of the index type and map
+   of column names to values and return a
+    frame with a new row added corresponding
+    to the input index and column map."
+  [^Frame df i row-map]
+
+  (assert map? row-map)
+
+  (let [new-columns (into {}
+                          (for [[k srs] (column-map df)]
+                            [k (conj srs [i (get row-map k nil)])]))
+        new-index (conj (index df) i)]
+    (frame new-columns new-index)))
+
 
 (defmethod print-method Frame [df writer]
 
@@ -191,7 +206,6 @@
                       (str/join "\n" (map
                                        (fn [[idx row]] (str idx \tab (str/join \tab row)))
                                        (rows->vectors df))))))
-
 
 (defn ix
   "Get the 'row' of the input dataframe
@@ -217,11 +231,10 @@
   [df col-name]
   (-> df column-map col-name))
 
+
 (defn rows->vectors
-  "Return an iterator over vectors
-  of key-val pairs of the row's
-  index value and the value of that
-  row as a vector"
+  "Return an iterator key-val pairs
+  of index values to row values (as a vector)"
   [df]
   (zip
     (index df)
@@ -289,7 +302,7 @@
                          (if (and
                                (symbol? x)
                                (clojure.string/starts-with? (name x) "$"))
-                           `(get ~ctx ~(keyword (subs (name x) 1)))
+                           `(col ~ctx ~(keyword (subs (name x) 1)))
                            x))
                        expr))
         exprs (map replace-fn body)]
