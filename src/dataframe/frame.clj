@@ -8,7 +8,8 @@
 
 
 (declare frame
-         assoc-index
+         assoc-ix
+         assoc-col
          iterrows
          rows->vectors
          set-index
@@ -67,7 +68,7 @@
     (assert 2 (count other))
     (assert map? (last other))
     (let [[idx m] other]
-      (assoc-index this idx m)))
+      (assoc-ix this idx m)))
   (empty [this] (empty? index))
   (equiv [this other] (.. this (equals other))))
 
@@ -181,7 +182,7 @@
   (Frame. index (into {} (for [[col srs] (column-map frame)]
                            [col (series/set-index srs index)]))))
 
-(defn assoc-index
+(defn assoc-ix
   "Takes a key of the index type and map
    of column names to values and return a
     frame with a new row added corresponding
@@ -195,6 +196,21 @@
                             [k (conj srs [i (get row-map k nil)])]))
         new-index (conj (index df) i)]
     (frame new-columns new-index)))
+
+
+
+(defn assoc-col
+  "Takes a key of the index type and map
+   of column names to values and return a
+    frame with a new row added corresponding
+    to the input index and column map."
+  [^Frame df col-name col]
+
+  (let [col (if (series/series? col)
+              col
+              (series/series col (index df)))]
+    (frame (assoc (column-map df) col-name col)
+           (index df))))
 
 
 (defmethod print-method Frame [df writer]
@@ -250,16 +266,32 @@
     [idx (into {} (for [[col srs] (column-map df)]
                     [col (series/ix srs idx)]))]))
 
-(defn maprows
-  "Apply the function to all vals in the Series,
-  returning a new Series consistening of these
-  transformed vals with their indices."
+(defn map-rows->srs
+  "Apply the function to each row in the DataFrame
+  (where the representation of each row is a map of
+  column names to values).
+  Return a Series whose index is the index of the
+  original DataFrame and whose value is the value
+  of the applied function."
   [^Frame df f]
-
   (let [rows (for [[_ row] (iterrows df)]
                (f row))]
-
     (series/series rows (index df))))
+
+
+(defn map-rows->df
+  "Apply the function to each row in the DataFrame
+  (where the representation of each row is a map of
+  column names to values).  The function should return
+  a Map.
+  Return a DataFrame whose index is the same as the
+  original dataframe and whose columns are the values
+  of the maps returned by the function."
+  [^Frame df f]
+  (let [rows (for [[idx row] (iterrows df)]
+               [idx (f row)])]
+    (-list-of-index-row-pairs->frame rows)))
+    ;(series/series rows (index df))))
 
 
 (defn select

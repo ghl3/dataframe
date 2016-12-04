@@ -60,7 +60,7 @@
         (empty? (frame/frame {} [])))
 
 (expect (series/series [3 6 9] [:x :y :z])
-        (frame/maprows
+        (frame/map-rows->srs
           (frame/frame {:a '(1 2 3) :b '(2 4 6)} [:x :y :z])
           (fn [row] (+ (:a row) (:b row)))))
 
@@ -102,7 +102,11 @@
 
 (expect (frame/frame {:a [1 2 3] :b [100 200 300] :c [10 20 30]})
         (let [df (frame/frame {:a [1 2] :b [100 200] :c [10 20]})]
-          (frame/assoc-index df 2 {:a 3 :b 300 :c 30})))
+          (frame/assoc-ix df 2 {:a 3 :b 300 :c 30})))
+
+(expect (frame/frame {:a [1 2] :b [100 200] :c [10 20] :d [5 10]})
+        (let [df (frame/frame {:a [1 2] :b [100 200] :c [10 20]})]
+          (frame/assoc-col df :d [5 10])))
 
 
         ;(with-> df
