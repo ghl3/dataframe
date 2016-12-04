@@ -310,6 +310,53 @@
     (frame vals idx)))
 
 
+(defn subset
+  "Return a subset of the input Frame
+  the start and end indices (which are
+  integer like) using the index order.
+
+  The subset is inclusive on the start
+  but exclusive on the end, meaning that
+  (subset srs 0 (count srs)) returns the
+  same series"
+  [^Frame df start end]
+
+  (assert (<= start end))
+
+  (let [last (count df)
+        srs-begin (min (max 0 start) last)
+        srs-end (min (max 0 end) last)
+        subset-index (subvec (index df) srs-begin srs-end)
+        subset-columns (into {} (for [[name col] (column-map df)]
+                                  [name (series/subset col start end)]))]
+    (frame subset-columns subset-index)))
+
+
+(defn head
+  "Return a subseries consisting of the
+  first n elements of the input frame
+  using the index order.
+
+  If n > (count df), return the
+  whole frame."
+  ([^Frame df] (head df 5))
+  ([^Frame df n] (subset df 0 n)))
+
+
+(defn tail
+  "Return a subseries consisting of the
+  last n elements of the input frame
+  using the index order.
+
+  If n > (count df), return the
+  whole frame."
+  ([^Frame df] (tail df 5))
+  ([^Frame df n]
+   (let [start (- (count df) n)
+         end (count df)]
+     (subset df start end))))
+
+
 (defmacro with-context
   "Takes a context (map-like object)
   and a list of body expression forms

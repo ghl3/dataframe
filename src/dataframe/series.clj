@@ -169,11 +169,9 @@
   (let [last (count srs)
         srs-begin (min (max 0 start) last)
         srs-end (min (max 0 end) last)]
-
     (series
       (subvec (values srs) srs-begin srs-end)
-      (subvec (index srs) srs-begin srs-end)
-      )))
+      (subvec (index srs) srs-begin srs-end))))
 
 
 (defn head

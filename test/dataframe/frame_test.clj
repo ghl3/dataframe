@@ -96,10 +96,6 @@
         (let [df (frame/frame {:a [1 2 3] :b [100 200 300]})]
           (frame/with-> df (frame/select (series/gt $a 2)))))
 
-;(expect (frame/frame {:a [1 2 3] :b [100 200 300] :c [10 20 30]})
-;        (let [df (frame/frame {:a [1 2 3] :b [100 200 300]})]
-;              (assoc df :c [10 20 30])))
-
 (expect (frame/frame {:a [1 2 3] :b [100 200 300] :c [10 20 30]})
         (let [df (frame/frame {:a [1 2] :b [100 200] :c [10 20]})]
           (frame/assoc-ix df 2 {:a 3 :b 300 :c 30})))
@@ -109,11 +105,12 @@
           (frame/assoc-col df :d [5 10])))
 
 
-        ;(with-> df
-;        (select (lt $x 10))
-;        (assoc :z (plus $x $y))
-;        (sort-by :z :x)
-;        head)
+(expect (frame/frame {:a [1] :b [2]} [:x])
+        (frame/head
+          (frame/frame [[:x {:a 1 :b 2}]
+                        [:y {:a 2 :b 4}]
+                        [:z {:a 3 :b 6}]])
+        1))
 
 (expect 3
         (count (frame/frame {:a '(1 2 3) :b '(2 4 6)})))
