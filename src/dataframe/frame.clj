@@ -368,6 +368,21 @@
 
 
 (defn replace-df-column
+  "Takes a symbol representing a Frame
+  and an expression.  Walks the expression
+  and replaces symbols starting with '$'
+  with an expression to get a column from the
+  dataframe whose name is a keyword matching
+  the '$' symbol.
+
+  In other words, if the expression contains:
+
+  $foo
+
+  it is replaced by:
+
+  (col df :foo)
+  "
   [df expr]
   (clojure.walk/postwalk
     (fn [x]
@@ -380,6 +395,12 @@
 
 
 (defmacro with->
+  "A threading macro intended to thread
+  expressions on data frames.
+  Automatically replaces symbols starting
+  with '$' with columns from the last
+  DataFrame that was encountered
+  in the threading."
   [df & exprs]
   (if (empty? exprs)
     df
