@@ -17,9 +17,9 @@
 ; As viewed as a Clojure Persistent collection, it is a collection
 ; of [index value] pairs.
 ; It is also Associative between the index keys and its values
-(deftype ^{:protected true} Series [^IPersistentVector values
-                                    ^IPersistentVector index
-                                    ^IPersistentMap lookup]
+(deftype Series [^IPersistentVector values
+                  ^IPersistentVector index
+                  ^IPersistentMap lookup]
 
   java.lang.Object
   (equals [this other]

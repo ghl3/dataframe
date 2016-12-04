@@ -1,8 +1,8 @@
 (ns dataframe.core
-  (:refer-clojure :exclude [max])
+  (:require [dataframe.series]
+            [dataframe.frame])
   (:import (dataframe.series Series)
            (dataframe.frame Frame)))
-
 
 ; Imported series methods
 
@@ -59,35 +59,35 @@
   [multifn dispatch-val f]
   (.. multifn (addMethod dispatch-val f)))
 
-(defn first-class
+(defn first-type
   [& args]
-  (class (first args)))
+  (type (first args)))
 
 
-(defmulti ix first-class)
+(defmulti ix first-type)
 (deligate ix Series dataframe.series/ix)
 (deligate ix Frame dataframe.frame/ix)
 
-(defmulti index first-class)
+(defmulti index first-type)
 (deligate index Series dataframe.series/index)
 (deligate index Frame dataframe.frame/index)
 
-(defmulti set-index first-class)
+(defmulti set-index first-type)
 (deligate set-index Series dataframe.series/set-index)
 (deligate set-index Frame dataframe.frame/set-index)
 
-(defmulti select first-class)
+(defmulti select first-type)
 (deligate select Series dataframe.series/select)
 (deligate select Frame dataframe.frame/select)
 
-(defmulti subset first-class)
+(defmulti subset first-type)
 (deligate subset Series dataframe.series/subset)
 (deligate subset Frame dataframe.frame/subset)
 
-(defmulti head first-class)
+(defmulti head first-type)
 (deligate head Series dataframe.series/head)
 (deligate head Frame dataframe.frame/head)
 
-(defmulti tail first-class)
+(defmulti tail first-type)
 (deligate tail Series dataframe.series/tail)
 (deligate tail Frame dataframe.frame/tail)

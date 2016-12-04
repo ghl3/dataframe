@@ -37,7 +37,7 @@
 ; of [column val] pairs (for the purpose of seq and cons).
 ; As viewed as an association, it is a map from index
 ; keys to row maps.
-(deftype ^{:protected true} Frame [index column-map]
+(deftype Frame [index column-map]
 
   java.lang.Object
   (equals [this other]
