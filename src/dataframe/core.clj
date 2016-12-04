@@ -21,7 +21,7 @@
 (def mul dataframe.series/mul)
 (def div dataframe.series/div)
 (def eq dataframe.series/eq)
-(def new dataframe.series/neq)
+(def neq dataframe.series/neq)
 
 
 ; Imported frame methods
