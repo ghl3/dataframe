@@ -356,6 +356,16 @@
          end (count df)]
      (subset df start end))))
 
+(defn sort-rows
+  "Sort DataFrame rows using the
+  given column names in the order
+  that they appear"
+  [^Frame df & col-names]
+  (let [get-sort-key (fn [[idx row-map]]
+                       (into [] (for [col col-names] (get row-map col))))
+        sorted-idx-row-pairs (sort-by get-sort-key df)]
+    (-list-of-index-row-pairs->frame sorted-idx-row-pairs)))
+
 
 (defn replace-df-column
   [df expr]

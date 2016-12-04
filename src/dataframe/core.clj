@@ -43,6 +43,7 @@
 (def map-rows->srs dataframe.frame/map-rows->srs)
 (def map-rows->df dataframe.frame/map-rows->df)
 
+(def sort-rows dataframe.frame/sort-rows)
 
 ;(. (var with->) (setMacro))
 

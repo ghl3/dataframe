@@ -134,3 +134,8 @@
 (expect false
         (= (frame/frame {:a '(1 2 5) :b '(2 4 6)})
            (frame/frame {:a '(1 2 3) :b '(2 4 6)})))
+
+
+(expect (frame/frame {:a [2 4 7] :b [4 2 8]} [:y :x :z])
+        (frame/sort-rows (frame/frame [[:x {:a 4, :b 2}] [:y {:a 2, :b 4}] [:z {:a 7, :b 8}]])
+                         :a))
