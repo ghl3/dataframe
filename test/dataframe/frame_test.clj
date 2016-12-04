@@ -79,14 +79,21 @@
           [false true nil "true"]))
 
 
-(expect (series/series [15])
-        (frame/with-context
-          (frame/frame [{:b 10}])
-          (series/add 5 $b)))
+;(expect (series/series [15])
+;        (frame/with-context
+;          (frame/frame [{:b 10}])
+;          (series/add 5 $b)))
 
 
-(expect `(do (+ 5 (dataframe.frame/col {:b 10} :b)))
-        (macroexpand `(frame/with-context {:b 10} (+ 5 $b))))
+(expect '(+ 5 (dataframe.frame/col {:b 10} :b))
+        (frame/replace-df-column {:b 10} '(+ 5 $b)))
+
+(expect 15
+        (frame/with-> 12 (+ 5) (- 2)))
+
+(expect (frame/frame {:a [1 2] :z [1 2]})
+        (frame/with-> (frame/frame {:a [1 2]}) (frame/assoc-col :z $a)))
+
 
 (expect 20
         (frame/with-> {:x {:y 20}} :x :y))

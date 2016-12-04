@@ -357,39 +357,23 @@
      (subset df start end))))
 
 
-(defmacro with-context
-  "Takes a context (map-like object)
-  and a list of body expression forms
-  and evaluates the forms by replacing
-  all symbols starting with $
-  with values from the context corresponding
-  to keywords of the same name.
-
-  So, when it encounters:
-  $x
-  it replaces it with the value of looking up:
-  :x
-
-  in the context map.
-
-  In particular, this can be used with
-  a Frame as the context."
-  [ctx & body]
-  (let [replace-fn (fn [expr]
-                     (clojure.walk/postwalk
-                       (fn [x]
-                         (if (and
-                               (symbol? x)
-                               (clojure.string/starts-with? (name x) "$"))
-                           `(col ~ctx ~(keyword (subs (name x) 1)))
-                           x))
-                       expr))
-        exprs (map replace-fn body)]
-
-    `(do ~@exprs)))
+(defn replace-df-column
+  [df expr]
+  (clojure.walk/postwalk
+    (fn [x]
+      (if (and
+            (symbol? x)
+            (clojure.string/starts-with? (name x) "$"))
+        `(col ~df ~(keyword (subs (name x) 1)))
+        x))
+    expr))
 
 
 (defmacro with->
   [df & exprs]
-  `(with-context ~df
-                (-> ~df ~@exprs)))
+  (if (empty? exprs)
+    df
+    (let [sym (gensym)
+          head (replace-df-column df (first exprs))
+          tail (rest exprs)]
+      `(let [~sym (-> ~df ~head)] (with-> ~sym ~@tail)))))
