@@ -8,6 +8,7 @@
          update-key)
 
 ; A Series is a data structure that maps an index
+; A Series is a data structure that maps an index
 ; to valus.  It supports:
 ; - Order 1 access to values by index
 ; - Order 1 access to [index value] pairs by position (nth)
@@ -67,7 +68,8 @@
     frame with a new row added corresponding
     to the input index and column map."
     (if (contains? this idx)
-      (update-key this idx val)
+      (series (assoc values (get lookup idx) val)
+              index)
       (series (conj values val) (conj index idx)))))
 
 ; Constructor
@@ -116,20 +118,6 @@
   to the input index"
   ([^Series srs i] (get srs i nil))
   ([^Series srs i or-else] (get srs i or-else)))
-
-
-(defn update-key
-  "If the series has the given key,
-  return a series with the value
-  for that key updated to the given
-  value.
-  Otherwise, do nothing and return
-  the given series"
-  [^Series srs k v]
-  (if (contains? srs k)
-    (series (assoc (values srs) (.. srs lookup (get k)) v)
-            (index srs))
-    srs))
 
 
 (defn set-index
