@@ -176,6 +176,36 @@ To make manipulating Frames easier, dataframe introduces the `with->` macro, whi
 </pre>
  
 
+Notice how the uses of `$a`, `$b`, and `$c` are replaced by the corresponding columns, as Series objects, in the dataframe pipeline above.  This allows us to leverage functions that act on Series objects to transform these columns and to use them to update the Frame object.
+
+These pipelines can be arbitrarily complicated:
+
+```clojure
+
+(def my-df (frame [[:w {:a 0 :b 8}]
+                   [:x {:a 1 :b 2}]
+                   [:y {:a 2 :b 4}]
+                   [:z {:a 3 :b 8}]]))
+                   
+(with-> my-df
+        (select (and (lte $a 2) (gte $b 4)))
+        (assoc-col :c (add $a $b))
+        (map-rows->df (fn [row] {:foo (+ (:a row) (:c row))
+                                 :bar (- (:b row) (:c row))}))
+        (sort-rows :foo :bar)
+        head)                  
+```
+
+<pre>
+=> class dataframe.frame.Frame
+	:bar	:foo
+:y	-2		8
+:w	0		8	
+:z	-3		14
+</pre>
+
+
+
 DataFrame is distributed under the MIT license
 
 Copyright © 2016 George Herbert Lewis
