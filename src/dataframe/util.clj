@@ -23,3 +23,10 @@
    (if index-first?
      (zip (range) xs)
      (zip xs (range)))))
+
+
+(defn ->vector
+  [x]
+  (if (vector? x)
+    x
+    (vec x)))

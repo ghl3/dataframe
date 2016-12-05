@@ -79,8 +79,8 @@
 
   ([data index]
 
-   (let [data (vec data)
-         index (vec index)
+   (let [data (->vector data)
+         index (->vector index)
          lookup (into {} (enumerate index false))]
 
      (assert (apply distinct? index))
@@ -124,7 +124,8 @@
   "Return a series with the same values
   but with the updated index."
   [^Series srs index]
-  (series (values srs) (vec index)))
+  (series (values srs)
+          (->vector index)))
 
 
 (defn mapvals

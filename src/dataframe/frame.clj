@@ -245,7 +245,7 @@
   "Return the column from the dataframe
   by the given name as a Series"
   [df col-name]
-  (-> df column-map col-name))
+  (get (column-map df) col-name))
 
 
 (defn rows->vectors
