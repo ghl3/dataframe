@@ -215,11 +215,12 @@
   [f]
   (fn [x y]
     (cond
-      (and (instance? Series x) (instance? Series y)) (do
-                                                        (assert (= (index x) (index y)))
-                                                        (series (for [[l r] (zip (values x) (values y))]
-                                                                  (f l r))
-                                                                (index x)))
+      (and (instance? Series x)
+           (instance? Series y)) (do
+                                         (assert (= (index x) (index y)))
+                                         (series (for [[l r] (zip (values x) (values y))]
+                                                   (f l r))
+                                                 (index x)))
       (instance? Series x) (series (for [l (values x)]
                                      (f l y))
                                    (index x))

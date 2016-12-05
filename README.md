@@ -5,13 +5,25 @@ DataFrames for Clojure (inspired by Python's Pandas)
 
 The dataframe package contains two core data structures:
 
-- A Series is a map of index keys to values.  It is ordered and supports O(1) lookup of values by index key as well as O(1) lookup of values by position (based on the order).
-- A Frame is a map of column names to Series, where each Series has an identical index.  A Frame may also be thought of as a map of index keys to maps, where each map is a row of a Frame that maps column names to the value in that row.
+- A Series is a map of index keys to values.  It is ordered and supports O(1) lookup of values by index as well as O(1) lookup of values by positional offset (based on the order of the index).
+- A Frame is a map of column names to column values, which are represented as Series, each with an identical index.  A Frame may also be thought of as a map of index keys to maps, where each map is a row of a Frame that maps column names to the value in that row.
 
 
 
 Series
 ======
+
+A series can be thought of as a 1-D vector of data with an index (vector of keys) for every value.  The keys are typically either integers or clojure Keywords, but can be any value.  Any of values may be nil, but the non-nil values must all be of the same type.
+
+When iterated over, a Series is a collection of pairs of `[index value]`.  
+
+| index | val |
+|-------|-----|
+| :a    | 10  |
+| :b    | 20  |
+| :c    | 30  |
+| :d    | 40  |
+
 
 To create a Series, pass a sequence of values and an index sequence to the constructor function:
 
@@ -30,8 +42,6 @@ srs
 :c 3
 </pre>
 
-The non-nil values of a series must all be of the same type.
-
 DataFrame core has a number of functions for operating on or manipulating Series objects.
 
 ```clojure
@@ -42,7 +52,7 @@ DataFrame core has a number of functions for operating on or manipulating Series
 ; [1 2 3]
 ```
 
-One can apply arithmetic operations on a Series which return Series objects and which obey broadcast rules:
+One can apply arithmetic operations on a Series which return Series objects.  These operations obey broadcast rules: You may combine a primitive with a series which will apply the operation to every element of a series and return a new series with the same index as the first.  Or, you may apply a row-by-row operation on two series (if their indices exactly align):
 
 ```clojure
 (df/add 1 srs)
@@ -66,13 +76,38 @@ One can apply arithmetic operations on a Series which return Series objects and 
 :c false
 </pre>
 
+```clojure
+(df/add (series [1 2 3]) (series [10 20 30]))
+```
+
+<pre>
+=> class dataframe.series.Series
+0 11
+1 22
+2 33
+</pre>
+
 
 Frames
 ======
 
-There are a number of equivalent ways to create a DataFrame.  These all use the `dataframe.core/frame` function.
+Frames are aligned collections of column-names to Series.  
 
-The first is to pass a map of column names to column values as well as an optional index (if no index is passed, then a standard index of integers starting at 0 will be used).  The column values can either be sequences or they can be Series objects, but must all have the same length.
+When iterated over, a Frame is a collection of pairs of indexes to maps of rows: `[index {col->val}]`.  
+
+
+| columns: | :a | :b | :c  |
+|----------|----|----|-----|
+| index    |    |    |     |
+| :x       | 10 | 2  | 100 |
+| :y       | 20 | 4  | 300 |
+| :z       | 30 | 6  | 600 |
+
+
+
+There are a number of equivalent ways to create a DataFrame.  These all use the `dataframe.core/frame` constructor function.  These ways are:
+
+- Pass a map of column names to column values as well as an optional index (if no index is passed, then a standard index of integers starting at 0 will be used).  The column values can either be sequences or they can be Series objects, but must all have the same length.
 
 
 ```clojure
@@ -92,7 +127,7 @@ frame
 
 Here, `:a` and `:b` are the names of the columns and the index over rows is `[:x :y :z]`.
 
-One can also construct a DataFrame from a list of pairs of index keys and rows-as-maps.
+- Pass a list of pairs of index keys and rows-as-maps.
 
 ```clojure
 (def frame (df/frame [[:x {:a 1 :b 10}]
@@ -108,7 +143,7 @@ frame
 :z	3	30
 </pre>
 
-And, finally, one can construct a DataFrame from a list of maps and an optional index sequence:
+- Pass a list of maps and an optional index sequence:
 
 ```clojure
 (def frame (df/frame [{:a 1 :b 10}
@@ -126,7 +161,7 @@ frame
 </pre>
 
 
-DataFrame core has a number of functions for operating on or manipulating Series objects.
+DataFrame core has a number of functions for operating on or manipulating Frames.
 
 ```clojure
 (def frame (df/frame [[:x {:a 1 :b 10}]
@@ -154,7 +189,7 @@ DataFrame core has a number of functions for operating on or manipulating Series
 
 ```
 
-To make manipulating Frames easier, dataframe introduces the `with->` macro, which combines threading with easy access to the columns of a Frame.  This macro takes a Frame and threads it through a series of operations.  In doing so, when it encounters a symbol of the form `$col`, it knows to replace it with a reference to a column in the dataframe whose name is the keyword `:col` (for this reason, it is preferred to use keywords as column names).
+To make manipulating Frames easier, dataframe introduces the `with->` macro, which combines Clojure's threading macro with notation for easily accessing the column of a Frame.  This macro takes a Frame and threads it through a series of operations.  In doing so, when it encounters a symbol of the form `$col`, it knows to replace it with a reference to a column in the dataframe whose name is the keyword `:col` (for this reason, it is preferred to use keywords as column names).
 
 
 ```clojure
