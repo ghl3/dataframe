@@ -1,5 +1,8 @@
 language: clojure
 
+install:
+  - lein deps
+
 script:
 - lein expectations
 - lein cljfmt check
