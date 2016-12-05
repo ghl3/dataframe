@@ -58,12 +58,12 @@
   (seq [this] (if (empty? index)
                 nil
                 (iterrows this)))
+  ;Takes a vector pair of [idx row],
+  ;where row is a map, and returns a
+  ;Frame extended by one row."
   (cons [this other]
-    "Takes a vector pair of [idx row],
-    where row is a map, and returns a
-    Frame extended by one row."
     (assert vector? other)
-    (assert 2 (count other))
+    (assert (= 2 (count other)))
     (assert map? (last other))
     (let [[idx m] other]
       (assoc-ix this idx m)))

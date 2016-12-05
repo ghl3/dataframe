@@ -42,10 +42,10 @@
   (seq [this] (if (empty? index)
                 nil
                 (zip (. this index) (. this values))))
+  ; Return a sequence of key-val pairs
   (cons [this other]
-    "Return a sequence of key-val pairs"
     (assert (vector? other))
-    (assert 2 (count other))
+    (assert (= 2 (count other)))
     (assoc this (first other) (last other)))
     ;(cons (.iterator this) other))
   (empty [this] (empty? index))
@@ -62,11 +62,11 @@
     (contains? lookup key))
   (entryAt [this key]
     (MapEntry/create key (.. this (valAt key))))
+  ;Takes a key of the index type and map
+  ; of column names to values and return a
+  ; frame with a new row added corresponding
+  ; to the input index and column map."
   (assoc [this idx val]
-    "Takes a key of the index type and map
-    of column names to values and return a
-    frame with a new row added corresponding
-    to the input index and column map."
     (if (contains? this idx)
       (series (assoc values (get lookup idx) val)
         index)
