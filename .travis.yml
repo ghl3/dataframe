@@ -1,3 +1,5 @@
 language: clojure
 
-script: lein expectations
+script:
+- lein expectations
+- lein cljfmt check
