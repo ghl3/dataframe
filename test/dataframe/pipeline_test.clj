@@ -27,6 +27,6 @@
     (with-> df
       (select (and (lte $a 2) (gte $b 4)))
       (assoc-col :c (add $a $b))
-      (map-rows->df (fn [row] {:foo (+ (:a row) (:c row))
-                               :bar (- (:b row) (:c row))}))
+      (maprows->df (fn [row] {:foo (+ (:a row) (:c row))
+                              :bar (- (:b row) (:c row))}))
       head)))

@@ -39,8 +39,8 @@
 
 (def iterrows dataframe.frame/iterrows)
 
-(def map-rows->srs dataframe.frame/map-rows->srs)
-(def map-rows->df dataframe.frame/map-rows->df)
+(def maprows->srs dataframe.frame/maprows->srs)
+(def maprows->df dataframe.frame/maprows->df)
 
 (def sort-rows dataframe.frame/sort-rows)
 

@@ -253,7 +253,7 @@
     [idx (into {} (for [[col srs] (column-map df)]
                     [col (series/ix srs idx)]))]))
 
-(defn map-rows->srs
+(defn maprows->srs
   "Apply the function to each row in the DataFrame
   (where the representation of each row is a map of
   column names to values).
@@ -265,7 +265,7 @@
                (f row))]
     (series/series rows (index df))))
 
-(defn map-rows->df
+(defn maprows->df
   "Apply the function to each row in the DataFrame
   (where the representation of each row is a map of
   column names to values).  The function should return
@@ -277,8 +277,6 @@
   (let [rows (for [[idx row] (iterrows df)]
                [idx (f row)])]
     (-list-of-index-row-pairs->frame rows)))
-    ;(series/series rows (index df))))
-
 
 (defn select
   [^Frame df selection]

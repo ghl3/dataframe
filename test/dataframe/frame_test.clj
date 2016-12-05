@@ -54,9 +54,14 @@
   (empty? (frame/frame {} [])))
 
 (expect (series/series [3 6 9] [:x :y :z])
-  (frame/map-rows->srs
+  (frame/maprows->srs
     (frame/frame {:a '(1 2 3) :b '(2 4 6)} [:x :y :z])
     (fn [row] (+ (:a row) (:b row)))))
+
+(expect (frame/frame {:bar [-1 -2 -3] :foo [3 6 9]} [:x :y :z])
+        (frame/maprows->df
+          (frame/frame {:a '(1 2 3) :b '(2 4 6)} [:x :y :z])
+          (fn [row] {:foo (+ (:a row) (:b row)) :bar (- (:a row) (:b row))})))
 
 (expect (frame/frame {:a [1 2 3] :b [4 5 6]} [:x :y :z])
   (frame/frame
