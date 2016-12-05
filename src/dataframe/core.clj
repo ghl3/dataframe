@@ -53,7 +53,7 @@
 ; Multi Methods
 
 
-(defn deligate
+(defn delegate
   "Deligate the implementation of a multimethod to an existing function"
   [multifn dispatch-val f]
   (.. multifn (addMethod dispatch-val f)))
@@ -63,29 +63,29 @@
   (type (first args)))
 
 (defmulti ix first-type)
-(deligate ix Series dataframe.series/ix)
-(deligate ix Frame dataframe.frame/ix)
+(delegate ix Series dataframe.series/ix)
+(delegate ix Frame dataframe.frame/ix)
 
 (defmulti index first-type)
-(deligate index Series dataframe.series/index)
-(deligate index Frame dataframe.frame/index)
+(delegate index Series dataframe.series/index)
+(delegate index Frame dataframe.frame/index)
 
 (defmulti set-index first-type)
-(deligate set-index Series dataframe.series/set-index)
-(deligate set-index Frame dataframe.frame/set-index)
+(delegate set-index Series dataframe.series/set-index)
+(delegate set-index Frame dataframe.frame/set-index)
 
 (defmulti select first-type)
-(deligate select Series dataframe.series/select)
-(deligate select Frame dataframe.frame/select)
+(delegate select Series dataframe.series/select)
+(delegate select Frame dataframe.frame/select)
 
 (defmulti subset first-type)
-(deligate subset Series dataframe.series/subset)
-(deligate subset Frame dataframe.frame/subset)
+(delegate subset Series dataframe.series/subset)
+(delegate subset Frame dataframe.frame/subset)
 
 (defmulti head first-type)
-(deligate head Series dataframe.series/head)
-(deligate head Frame dataframe.frame/head)
+(delegate head Series dataframe.series/head)
+(delegate head Frame dataframe.frame/head)
 
 (defmulti tail first-type)
-(deligate tail Series dataframe.series/tail)
-(deligate tail Frame dataframe.frame/tail)
+(delegate tail Series dataframe.series/tail)
+(delegate tail Frame dataframe.frame/tail)
