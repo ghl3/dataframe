@@ -7,14 +7,8 @@
   :license {:name "MIT License"
             :url "http://www.opensource.org/licenses/mit-license.php"}
 
-  :dependencies [
-                 [org.clojure/clojure "1.8.0"]
+  :dependencies [[org.clojure/clojure "1.8.0"]
                  [net.mikera/core.matrix "0.54.0"]
-                 [net.mikera/vectorz-clj "0.45.0"]
-
-                 [expectations "2.1.8"]
-                 ]
-
-  :plugins [[lein-expectations "0.0.7"]]
+                 [net.mikera/vectorz-clj "0.45.0"]]
 
   )
