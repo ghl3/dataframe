@@ -1,5 +1,7 @@
 # dataframe
 
+[![Build Status](https://travis-ci.org/ghl3/dataframe.svg?branch=master)](https://travis-ci.org/ghl3/dataframe)
+
 DataFrames for Clojure (inspired by Python's Pandas)
 
 
@@ -15,7 +17,7 @@ Series
 
 A series can be thought of as a 1-D vector of data with an index (vector of keys) for every value.  The keys are typically either integers or clojure Keywords, but can be any value.  Any of values may be nil, but the non-nil values must all be of the same type.
 
-When iterated over, a Series is a collection of pairs of `[index value]`.  
+When iterated over, a Series is a collection of pairs of `[index value]`.
 
 | index | val |
 |-------|-----|
