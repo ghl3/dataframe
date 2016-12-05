@@ -1,7 +1,8 @@
 (ns dataframe.series-test
   (:require [dataframe.series :as srs :refer [series index]]
             [expectations :refer [expect more-of]]
-            [dataframe.series :as series]))
+            [dataframe.series :as series]
+            [dataframe.util :as util]))
 
 (expect '(0 1 2)
   (let [my-srs (srs/series '(:x :y :z))]
@@ -124,3 +125,14 @@
 (expect '([:a 1] [:b 2] [:c 3])
   (for [x  (series/series [1 2 3] [:a :b :c])]
     x))
+
+(expect ['(:a :b :c :d) '([1 10] [2 nil] [3 20] [nil 30])]
+  (series/index-aligned-pairs
+    (series/series [1 2 3] [:a :b :c])
+    (series/series [10 20 30] [:a :c :d])))
+
+(expect (series/series [11 nil 23 nil] [:a :b :c :d])
+  (series/join-map
+    (util/nillify +)
+    (series/series [1 2 3] [:a :b :c])
+    (series/series [10 20 30] [:a :c :d])))

@@ -27,3 +27,12 @@
   (if (vector? x)
     x
     (vec x)))
+
+(defn nillify
+  "Takes a binary function and returns
+  a function that short-circuits nil values."
+  [f]
+  (fn [& args]
+    (if (some nil? args)
+      nil
+      (apply f args))))

@@ -191,27 +191,40 @@
           end (count srs)]
       (subset srs start end))))
 
-(defn ^{:protected true}  nillify
-  "Takes a binary function and returns
-  a function that short-circuits nil values."
-  [f]
-  (fn [x y]
+(defn index-aligned-pairs
+  "Take two series and return
+  a joined index and a sequence
+  over pairs of the left and right
+  series"
+  [^Series left ^Series right]
 
-    (cond
-      (nil? x) nil
-      (nil? y) nil
-      :else (f x y))))
+  (if (= (index left) (index right))
+
+    [(index left) (zip (values left) (values right))]
+
+    (let [left-idx (index left)
+          right-only-idx (->> right index (filter #(not (contains? left %))))
+          idx (concat left-idx right-only-idx)
+          vals (for [i idx] [(ix left i) (ix right i)])]
+      [idx vals])))
+
+(defn join-map
+  "Takes a function of two arguments and
+   applies it to the pairs in the outer join of the
+   two input series, returning a new Series."
+  [f ^Series x ^Series y]
+  (let [[idx pairs] (index-aligned-pairs x y)
+        vals (for [[l r] pairs] (f l r))]
+    (series vals idx)))
 
 (defn ^{:protected true} broadcast
+  "Take a binary function and turn it into
+  a bradcasted function so that it can
+  operate on Series in any of it's arguments"
   [f]
   (fn [x y]
     (cond
-      (and (instance? Series x)
-        (instance? Series y)) (do
-                                (assert (= (index x) (index y)))
-                                (series (for [[l r] (zip (values x) (values y))]
-                                          (f l r))
-                                  (index x)))
+      (and (instance? Series x) (instance? Series y)) (join-map f x y)
       (instance? Series x) (series (for [l (values x)]
                                      (f l y))
                              (index x))
@@ -221,12 +234,13 @@
       :else (f x y))))
 
 (defn ^{:protected true} multi-broadcast
+  "Take a function of any arity and turn it into
+  a bradcasted function so that it can
+  operate on Series in any of it's arguments"
   [f]
   (fn [x & args]
-
     (loop [x x
            args args]
-
       (if (empty? args)
         x
         (recur ((broadcast f) x (first args))
@@ -243,5 +257,4 @@
 (def div (multi-broadcast (nillify /)))
 
 (def eq (multi-broadcast (nillify =)))
-(def neq (multi-broadcast (comp not (nillify =))))
-
+(def neq (multi-broadcast (comp (nillify not) (nillify =))))
