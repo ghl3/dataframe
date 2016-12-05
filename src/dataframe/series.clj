@@ -5,7 +5,7 @@
   (:import (clojure.lang IPersistentVector IPersistentMap MapEntry)))
 
 (declare series
-         update-key)
+  update-key)
 
 ; A Series is a data structure that maps an index
 ; A Series is a data structure that maps an index
@@ -18,16 +18,16 @@
 ; of [index value] pairs.
 ; It is also Associative between the index keys and its values
 (deftype Series [^IPersistentVector values
-                  ^IPersistentVector index
-                  ^IPersistentMap lookup]
+                 ^IPersistentVector index
+                 ^IPersistentMap lookup]
 
   java.lang.Object
   (equals [this other]
     (cond (nil? other) false
           (not (= Series (class other))) false
           :else (every? true?
-                        [(= (. this values) (. other values))
-                         (= (. this index) (. other index))])))
+                  [(= (. this values) (. other values))
+                   (= (. this index) (. other index))])))
   (hashCode [this]
     (hash [(hash (. this index)) (hash (. this values))]))
 
@@ -69,7 +69,7 @@
     to the input index and column map."
     (if (contains? this idx)
       (series (assoc values (get lookup idx) val)
-              index)
+        index)
       (series (conj values val) (conj index idx)))))
 
 ; Constructor
@@ -79,26 +79,24 @@
 
   ([data index]
 
-   (let [data (->vector data)
-         index (->vector index)
-         lookup (into {} (enumerate index false))]
+    (let [data (->vector data)
+          index (->vector index)
+          lookup (into {} (enumerate index false))]
 
-     (assert (apply distinct? index))
-     (assert (= (count data) (count index)))
-     (assert (apply = (map type (filter (comp not nil?) data))))
+      (assert (apply distinct? index))
+      (assert (= (count data) (count index)))
+      (assert (apply = (map type (filter (comp not nil?) data))))
 
-     (Series. data index lookup))))
-
+      (Series. data index lookup))))
 
 (defmethod print-method Series [^Series srs writer]
   (.write writer (str (class srs)
-                      "\n"
-                      (str/join "\n"
-                                (map
-                                  (fn [[i d]]
-                                    (str i " " (if (nil? d) "nil" d)))
-                                  (zip (. srs index) (. srs values)))))))
-
+                   "\n"
+                   (str/join "\n"
+                     (map
+                       (fn [[i d]]
+                         (str i " " (if (nil? d) "nil" d)))
+                       (zip (. srs index) (. srs values)))))))
 
 (defn series?
   [x]
@@ -119,14 +117,12 @@
   ([^Series srs i] (get srs i nil))
   ([^Series srs i or-else] (get srs i or-else)))
 
-
 (defn set-index
   "Return a series with the same values
   but with the updated index."
   [^Series srs index]
   (series (values srs)
-          (->vector index)))
-
+    (->vector index)))
 
 (defn mapvals
   "Apply the function to all vals in the Series,
@@ -134,7 +130,6 @@
   transformed vals with their indices."
   [^Series srs f]
   (series (map f (values srs)) (index srs)))
-
 
 (defn select
   "Takes a series and a list of possibly-true values
@@ -152,7 +147,6 @@
         vals (map #(nth % 1) to-keep)]
 
     (series vals idx)))
-
 
 (defn subset
   "Return a subseries defined
@@ -174,7 +168,6 @@
       (subvec (values srs) srs-begin srs-end)
       (subvec (index srs) srs-begin srs-end))))
 
-
 (defn head
   "Return a subseries consisting of the
   first n elements of the input series
@@ -185,7 +178,6 @@
   ([^Series srs] (head srs 5))
   ([^Series srs n] (subset srs 0 n)))
 
-
 (defn tail
   "Return a subseries consisting of the
   last n elements of the input series
@@ -195,10 +187,9 @@
   whole series."
   ([^Series srs] (tail srs 5))
   ([^Series srs n]
-   (let [start (- (count srs) n)
-         end (count srs)]
-     (subset srs start end))))
-
+    (let [start (- (count srs) n)
+          end (count srs)]
+      (subset srs start end))))
 
 (defn ^{:protected true}  nillify
   "Takes a binary function and returns
@@ -216,17 +207,17 @@
   (fn [x y]
     (cond
       (and (instance? Series x)
-           (instance? Series y)) (do
-                                         (assert (= (index x) (index y)))
-                                         (series (for [[l r] (zip (values x) (values y))]
-                                                   (f l r))
-                                                 (index x)))
+        (instance? Series y)) (do
+                                (assert (= (index x) (index y)))
+                                (series (for [[l r] (zip (values x) (values y))]
+                                          (f l r))
+                                  (index x)))
       (instance? Series x) (series (for [l (values x)]
                                      (f l y))
-                                   (index x))
+                             (index x))
       (instance? Series y) (series (for [r (values y)]
                                      (f x r))
-                                   (index y))
+                             (index y))
       :else (f x y))))
 
 (defn ^{:protected true} multi-broadcast
@@ -239,7 +230,7 @@
       (if (empty? args)
         x
         (recur ((broadcast f) x (first args))
-               (rest args))))))
+          (rest args))))))
 
 (def lt (broadcast (nillify <)))
 (def lte (broadcast (nillify <=)))
@@ -253,6 +244,4 @@
 
 (def eq (multi-broadcast (nillify =)))
 (def neq (multi-broadcast (comp not (nillify =))))
-
-
 

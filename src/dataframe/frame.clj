@@ -6,20 +6,18 @@
             [dataframe.util :refer :all])
   (:import (java.util Map)))
 
-
 (declare frame
-         assoc-ix
-         assoc-col
-         iterrows
-         rows->vectors
-         set-index
-         -seq->frame
-         -list-of-row-maps->frame
-         -list-of-index-row-pairs->frame
-         -map->frame
-         -map-of-series->frame
-         -map-of-sequence->frame)
-
+  assoc-ix
+  assoc-col
+  iterrows
+  rows->vectors
+  set-index
+  -seq->frame
+  -list-of-row-maps->frame
+  -list-of-index-row-pairs->frame
+  -map->frame
+  -map-of-series->frame
+  -map-of-sequence->frame)
 
 ; A Frame can be interpreted as:
 ; - A Map of index keys to maps of values
@@ -72,7 +70,6 @@
   (empty [this] (empty? index))
   (equiv [this other] (.. this (equals other))))
 
-
 ; It has an index for row-wise lookups
 (defn frame
   "Create a Frame from on of the following inputs:
@@ -83,11 +80,11 @@
   "
   ([data index] (set-index (frame data) index))
   ([data]
-   (cond
-     (map? data) (-map->frame data)
-     (seq? data) (-seq->frame data)
-     (vector? data) (-seq->frame data)
-     :else (throw (new Exception "Encountered unexpected type for frame constructor")))))
+    (cond
+      (map? data) (-map->frame data)
+      (seq? data) (-seq->frame data)
+      (vector? data) (-seq->frame data)
+      :else (throw (new Exception "Encountered unexpected type for frame constructor")))))
 
 (defn ^{:protected true} -map->frame
   [^Map data-map]
@@ -97,13 +94,12 @@
     (assert (apply = (map count (vals data-map)))))
 
   (let [k->srs (into {}
-                     (for [[k xs] data-map]
-                       (if (series/series? xs)
-                         [k xs]
-                         [k (series/series xs)])))]
+                 (for [[k xs] data-map]
+                   (if (series/series? xs)
+                     [k xs]
+                     [k (series/series xs)])))]
 
     (-map-of-series->frame k->srs)))
-
 
 (defn ^{:protected true} -map-of-series->frame
   "Takes a map of column keys to Series objects
@@ -121,7 +117,6 @@
     (let [any-index (series/index (nth (vals map-of-srs) 0))]
       (Frame. any-index map-of-srs))))
 
-
 (defn ^{:protected true} -seq->frame
   "Take a list of either maps
   (each representing a row)
@@ -131,7 +126,6 @@
   (if (map? (first s))
     (-list-of-row-maps->frame s)
     (-list-of-index-row-pairs->frame s)))
-
 
 (defn ^{:protected true} -list-of-row-maps->frame
   "Take a list of maps (each representing a row
@@ -147,7 +141,6 @@
 
     (-map-of-series->frame col->srs)))
 
-
 (defn ^{:protected true} -list-of-index-row-pairs->frame
   "Take a list of pairs
   of index values to row-maps
@@ -160,10 +153,9 @@
         col->vec (into {} (for [col columns]
                             [col (vec (map #(get % col nil) row-maps))]))
         col->srs (into {} (for [[col vals] col->vec]
-                   [col (series/series vals index)]))]
+                            [col (series/series vals index)]))]
 
     (-map-of-series->frame col->srs)))
-
 
 (defn index
   [^Frame frame]
@@ -192,12 +184,10 @@
   (assert map? row-map)
 
   (let [new-columns (into {}
-                          (for [[k srs] (column-map df)]
-                            [k (conj srs [i (get row-map k nil)])]))
+                      (for [[k srs] (column-map df)]
+                        [k (conj srs [i (get row-map k nil)])]))
         new-index (conj (index df) i)]
     (frame new-columns new-index)))
-
-
 
 (defn assoc-col
   "Takes a key of the index type and map
@@ -210,18 +200,17 @@
               col
               (series/series col (index df)))]
     (frame (assoc (column-map df) col-name col)
-           (index df))))
-
+      (index df))))
 
 (defmethod print-method Frame [df writer]
 
   (.write writer (str (class df)
-                      "\n"
-                      \tab (str/join \tab (columns df))
-                      "\n"
-                      (str/join "\n" (map
-                                       (fn [[idx row]] (str idx \tab (str/join \tab row)))
-                                       (rows->vectors df))))))
+                   "\n"
+                   \tab (str/join \tab (columns df))
+                   "\n"
+                   (str/join "\n" (map
+                                    (fn [[idx row]] (str idx \tab (str/join \tab row)))
+                                    (rows->vectors df))))))
 
 (defn ix
   "Get the 'row' of the input dataframe
@@ -240,13 +229,11 @@
     (series/series (map #(series/ix % i) (-> df column-map vals)) (-> df column-map keys))
     nil))
 
-
 (defn col
   "Return the column from the dataframe
   by the given name as a Series"
   [df col-name]
   (get (column-map df) col-name))
-
 
 (defn rows->vectors
   "Return an iterator key-val pairs
@@ -278,7 +265,6 @@
                (f row))]
     (series/series rows (index df))))
 
-
 (defn map-rows->df
   "Apply the function to each row in the DataFrame
   (where the representation of each row is a map of
@@ -309,7 +295,6 @@
 
     (frame vals idx)))
 
-
 (defn subset
   "Return a subset of the input Frame
   the start and end indices (which are
@@ -331,7 +316,6 @@
                                   [name (series/subset col start end)]))]
     (frame subset-columns subset-index)))
 
-
 (defn head
   "Return a subseries consisting of the
   first n elements of the input frame
@@ -342,7 +326,6 @@
   ([^Frame df] (head df 5))
   ([^Frame df n] (subset df 0 n)))
 
-
 (defn tail
   "Return a subseries consisting of the
   last n elements of the input frame
@@ -352,9 +335,9 @@
   whole frame."
   ([^Frame df] (tail df 5))
   ([^Frame df n]
-   (let [start (- (count df) n)
-         end (count df)]
-     (subset df start end))))
+    (let [start (- (count df) n)
+          end (count df)]
+      (subset df start end))))
 
 (defn sort-rows
   "Sort DataFrame rows using the
@@ -365,7 +348,6 @@
                        (into [] (for [col col-names] (get row-map col))))
         sorted-idx-row-pairs (sort-by get-sort-key df)]
     (-list-of-index-row-pairs->frame sorted-idx-row-pairs)))
-
 
 (defn replace-df-column
   "Takes a symbol representing a Frame
@@ -392,7 +374,6 @@
         `(col ~df ~(keyword (subs (name x) 1)))
         x))
     expr))
-
 
 (defmacro with->
   "A threading macro intended to thread

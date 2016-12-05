@@ -3,7 +3,6 @@
             [dataframe.core :refer :all]
             [dataframe.frame :as frame]))
 
-
 ;
 ;
 ;(expect (more-of df

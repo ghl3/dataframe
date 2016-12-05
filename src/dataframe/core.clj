@@ -23,7 +23,6 @@
 (def eq dataframe.series/eq)
 (def neq dataframe.series/neq)
 
-
 ; Imported frame methods
 
 (def frame dataframe.frame/frame)
@@ -51,7 +50,6 @@
 
 (defmacro with-> [& args] `(dataframe.frame/with-> ~@args))
 
-
 ; Multi Methods
 
 
@@ -63,7 +61,6 @@
 (defn first-type
   [& args]
   (type (first args)))
-
 
 (defmulti ix first-type)
 (deligate ix Series dataframe.series/ix)

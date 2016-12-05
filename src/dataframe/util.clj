@@ -1,6 +1,5 @@
 (ns dataframe.util)
 
-
 (defn zip
   "Take a number of iterables and
   return a single iterable over vectors,
@@ -16,14 +15,12 @@
   [& args]
   (apply map vector args))
 
-
 (defn enumerate
   ([xs] (enumerate xs true))
   ([xs index-first?]
-   (if index-first?
-     (zip (range) xs)
-     (zip xs (range)))))
-
+    (if index-first?
+      (zip (range) xs)
+      (zip xs (range)))))
 
 (defn ->vector
   [x]
