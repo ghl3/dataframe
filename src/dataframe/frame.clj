@@ -205,12 +205,15 @@
 (defmethod print-method Frame [df writer]
 
   (.write writer (str (class df)
-                   "\n"
-                   \tab (str/join \tab (columns df))
-                   "\n"
-                   (str/join "\n" (map
-                                    (fn [[idx row]] (str idx \tab (str/join \tab row)))
-                                    (rows->vectors df))))))
+                      "\n"
+                      \tab (str/join \tab (columns df))
+                      "\n"
+                      (str/join "\n" (map
+                                       (fn [[idx row]] (str idx \tab (str/join
+                                                                       \tab
+                                                                       (into []
+                                                                             (map #(if (nil? %) "nil" %) row)))))
+                                       (rows->vectors df))))))
 
 (defn ix
   "Get the 'row' of the input dataframe
@@ -346,6 +349,22 @@
                        (into [] (for [col col-names] (get row-map col))))
         sorted-idx-row-pairs (sort-by get-sort-key df)]
     (-list-of-index-row-pairs->frame sorted-idx-row-pairs)))
+
+
+(defn outer-join
+  ; TODO: Handle common column names
+  [^Frame left ^Frame right & {:keys [suffixes] :or {suffixes ["_x" "_y"]}}]
+
+  (let [left-idx (index left)
+        right-only-idx (->> right index (filter #(not (contains? (index left) %))))
+        idx (concat left-idx right-only-idx)
+        left-cols (for [[col srs] (column-map left)]
+                    [col (series/series (map #(series/ix srs %) idx) idx)])
+        right-cols (for [[col srs] (column-map right)]
+                    [col (series/series (map #(series/ix srs %) idx) idx)])
+        col-map (-> {} (into right-cols) (into left-cols))]
+    (frame col-map idx)))
+
 
 (defn replace-df-column
   "Takes a symbol representing a Frame

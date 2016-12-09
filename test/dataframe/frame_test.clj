@@ -131,3 +131,19 @@
 (expect (frame/frame {:a [2 4 7] :b [4 2 8]} [:y :x :z])
   (frame/sort-rows (frame/frame [[:x {:a 4, :b 2}] [:y {:a 2, :b 4}] [:z {:a 7, :b 8}]])
     :a))
+
+(expect (frame/frame {:a [1 2 3]
+                      :b [10 20 30]
+                      :c [1 2 3]
+                      :d [10 20 30]})
+        (frame/outer-join
+          (frame/frame {:a [1 2 3] :b [10 20 30]})
+          (frame/frame {:c [1 2 3] :d [10 20 30]})))
+
+(expect (frame/frame {:a [1 2 3 nil nil]
+                      :b [10 20 30 nil nil]
+                      :c [nil nil 1 2 3]
+                      :d [nil nil 10 20 30]})
+        (frame/outer-join
+          (frame/frame {:a [1 2 3] :b [10 20 30]})
+          (frame/frame {:c [1 2 3] :d [10 20 30]} [2 3 4])))
