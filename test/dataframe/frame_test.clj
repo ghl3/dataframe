@@ -147,3 +147,12 @@
         (frame/outer-join
           (frame/frame {:a [1 2 3] :b [10 20 30]})
           (frame/frame {:c [1 2 3] :d [10 20 30]} [2 3 4])))
+
+
+(expect (frame/frame {:a-y [4 5 6]
+                      :a-x [1 2 3]
+                      :b [10 20 30]
+                      :c [100 200 300]})
+        (frame/outer-join
+          (frame/frame {:a [1 2 3] :b [10 20 30]})
+          (frame/frame {:a [4 5 6] :c [100 200 300]})))

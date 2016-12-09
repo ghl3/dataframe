@@ -3,7 +3,8 @@
   (:require [dataframe.series :as series]
             [clojure.string :as str]
             [dataframe.series :as series]
-            [dataframe.util :refer :all])
+            [dataframe.util :refer :all]
+            [clojure.set :as set])
   (:import (java.util Map)))
 
 (declare frame
@@ -202,18 +203,26 @@
     (frame (assoc (column-map df) col-name col)
       (index df))))
 
-(defmethod print-method Frame [df writer]
 
-  (.write writer (str (class df)
-                      "\n"
-                      \tab (str/join \tab (columns df))
-                      "\n"
-                      (str/join "\n" (map
-                                       (fn [[idx row]] (str idx \tab (str/join
-                                                                       \tab
-                                                                       (into []
-                                                                             (map #(if (nil? %) "nil" %) row)))))
-                                       (rows->vectors df))))))
+(defn ^{:protected true} print-row
+  [row]
+  (str/join
+    \tab
+    (into []
+          (map #(if (nil? %) "nil" %) row))))
+
+
+(defmethod print-method Frame
+  [df writer]
+  (.write writer
+          (str (class df)
+               "\n"
+               \tab (str/join \tab (columns df))
+               "\n"
+               (str/join "\n" (map
+                                (fn [[idx row]]
+                                  (str idx \tab (print-row row)))
+                                (rows->vectors df))))))
 
 (defn ix
   "Get the 'row' of the input dataframe
@@ -353,15 +362,21 @@
 
 (defn outer-join
   ; TODO: Handle common column names
-  [^Frame left ^Frame right & {:keys [suffixes] :or {suffixes ["_x" "_y"]}}]
+  [^Frame left ^Frame right & {:keys [suffixes] :or {suffixes ["-x" "-y"]}}]
 
-  (let [left-idx (index left)
+  (let [shared-cols (into #{} (set/intersection (set (columns left)) (set (columns right))))
+        column-namer (fn [col left?] (if (contains? shared-cols col)
+                                       (keyword (str
+                                                  (name col)
+                                                  (if left? (first suffixes) (last suffixes))))
+                                       col))
+        left-idx (index left)
         right-only-idx (->> right index (filter #(not (contains? (index left) %))))
         idx (concat left-idx right-only-idx)
         left-cols (for [[col srs] (column-map left)]
-                    [col (series/series (map #(series/ix srs %) idx) idx)])
+                    [(column-namer col true) (series/series (map #(series/ix srs %) idx) idx)])
         right-cols (for [[col srs] (column-map right)]
-                    [col (series/series (map #(series/ix srs %) idx) idx)])
+                    [(column-namer col false) (series/series (map #(series/ix srs %) idx) idx)])
         col-map (-> {} (into right-cols) (into left-cols))]
     (frame col-map idx)))
 
