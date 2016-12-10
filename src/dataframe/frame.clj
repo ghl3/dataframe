@@ -5,20 +5,23 @@
             [dataframe.series :as series]
             [dataframe.util :refer :all]
             [clojure.set :as set])
-  (:import (java.util Map)))
+  (:import (java.util Map)
+           (dataframe TableBuilder)))
 
 (declare frame
-  assoc-ix
-  assoc-col
-  iterrows
-  rows->vectors
-  set-index
-  -seq->frame
-  -list-of-row-maps->frame
-  -list-of-index-row-pairs->frame
-  -map->frame
-  -map-of-series->frame
-  -map-of-sequence->frame)
+         assoc-ix
+         assoc-col
+         iterrows
+         columns
+         print-row
+         rows->vectors
+         set-index
+         -seq->frame
+         -list-of-row-maps->frame
+         -list-of-index-row-pairs->frame
+         -map->frame
+         -map-of-series->frame
+         -map-of-sequence->frame)
 
 ; A Frame can be interpreted as:
 ; - A Map of index keys to maps of values
@@ -86,6 +89,18 @@
       (seq? data) (-seq->frame data)
       (vector? data) (-seq->frame data)
       :else (throw (new Exception "Encountered unexpected type for frame constructor")))))
+
+
+(defmethod print-method Frame
+  [df writer]
+  (.write writer (str (class df) "\n"))
+  (.write writer
+          (let [table (new TableBuilder "idx" (columns df))]
+            (doall (for [[idx row] (rows->vectors df)]
+                     (. table (addRow idx row))))
+            (. table toString))))
+
+
 
 (defn ^{:protected true} -map->frame
   [^Map data-map]
@@ -211,18 +226,6 @@
     (into []
           (map #(if (nil? %) "nil" %) row))))
 
-
-(defmethod print-method Frame
-  [df writer]
-  (.write writer
-          (str (class df)
-               "\n"
-               \tab (str/join \tab (columns df))
-               "\n"
-               (str/join "\n" (map
-                                (fn [[idx row]]
-                                  (str idx \tab (print-row row)))
-                                (rows->vectors df))))))
 
 (defn ix
   "Get the 'row' of the input dataframe
@@ -414,15 +417,20 @@
 
 
 (defn join
-  [^Frame left ^Frame right join-type & common-col-resolution]
+  [^Frame left ^Frame right
+   & {:keys [how suffixes prefer-column]
+      :or   {how :inner
+             suffixes ["-x" "-y"]
+             prefer-column nil}
+      :as kwargs}]
 
   (let [shared-cols (into #{} (set/intersection (set (columns left)) (set (columns right))))
-        idx (join-index (index left) (index right) join-type)
+        idx (join-index (index left) (index right) how)
         left-cols  (for [[col srs] (column-map left)]  [col (series/series (map #(series/ix srs %) idx) idx) true])
         right-cols (for [[col srs] (column-map right)] [col (series/series (map #(series/ix srs %) idx) idx) false])
         all-cols (concat left-cols right-cols)
         col-map (reduce (fn [coll [col-name val left?]]
-                          (assoc-common-column coll col-name val left? shared-cols (into {} common-col-resolution)))
+                          (assoc-common-column coll col-name val left? shared-cols kwargs))
                         {}
                         all-cols)]
     (frame col-map idx)))

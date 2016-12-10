@@ -12,8 +12,15 @@
                  [net.mikera/core.matrix "0.54.0"]
                  [net.mikera/vectorz-clj "0.45.0"]
 
+                 [org.apache.commons/commons-lang3 "3.0"]
+
                  [expectations "2.1.8"]
+
                  ]
+
+  :source-paths ["src"]
+
+  :java-source-paths ["java"]
 
   :plugins [[lein-expectations "0.0.7"]]
 
