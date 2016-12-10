@@ -403,13 +403,21 @@
         (assoc into-map (add-suffix col-name suffix) val)))))
 
 
-(defn outer-join
-  [^Frame left ^Frame right & common-col-resolution]
+(defn join-index
+  [left-index right-index join-type]
+  (case join-type
+    :left  left-index
+    :right right-index
+    :outer (concat left-index (filter #(not (contains? (set left-index) %)) right-index))
+    :inner (filter #(contains? (set right-index) %) left-index)
+    :else  (throw (new Exception))))
+
+
+(defn join
+  [^Frame left ^Frame right join-type & common-col-resolution]
 
   (let [shared-cols (into #{} (set/intersection (set (columns left)) (set (columns right))))
-        left-idx (index left)
-        right-only-idx (->> right index (filter #(not (contains? (index left) %))))
-        idx (concat left-idx right-only-idx)
+        idx (join-index (index left) (index right) join-type)
         left-cols  (for [[col srs] (column-map left)]  [col (series/series (map #(series/ix srs %) idx) idx) true])
         right-cols (for [[col srs] (column-map right)] [col (series/series (map #(series/ix srs %) idx) idx) false])
         all-cols (concat left-cols right-cols)

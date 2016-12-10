@@ -136,26 +136,50 @@
                       :b [10 20 30]
                       :c [1 2 3]
                       :d [10 20 30]})
-        (frame/outer-join
+        (frame/join
           (frame/frame {:a [1 2 3] :b [10 20 30]})
-          (frame/frame {:c [1 2 3] :d [10 20 30]})))
+          (frame/frame {:c [1 2 3] :d [10 20 30]})
+          :how :outer))
 
 (expect (frame/frame {:a [1 2 3 nil nil]
                       :b [10 20 30 nil nil]
                       :c [nil nil 1 2 3]
                       :d [nil nil 10 20 30]})
-        (frame/outer-join
+        (frame/join
           (frame/frame {:a [1 2 3] :b [10 20 30]})
-          (frame/frame {:c [1 2 3] :d [10 20 30]} [2 3 4])))
+          (frame/frame {:c [1 2 3] :d [10 20 30]} [2 3 4])
+          :how :outer))
 
 
 (expect (frame/frame {:a-y [4 5 6]
                       :a-x [1 2 3]
                       :b [10 20 30]
                       :c [100 200 300]})
-        (frame/outer-join
+        (frame/join
           (frame/frame {:a [1 2 3] :b [10 20 30]})
-          (frame/frame {:a [4 5 6] :c [100 200 300]})))
+          (frame/frame {:a [4 5 6] :c [100 200 300]})
+          :how :outer))
+
+
+(expect (frame/frame {:a-x [3]
+                      :b [30]
+                      :a-y [1]
+                      :d [10]}
+                     [2])
+        (frame/join
+          (frame/frame {:a [1 2 3] :b [10 20 30]})
+          (frame/frame {:a [1 2 3] :d [10 20 30]} [2 3 4])
+          :how :inner))
+
+(expect (frame/frame {:a-x [1 2 3]
+                      :b [10 20 30]
+                      :a-y [nil nil 1]
+                      :d [nil nil 10]}
+                     [0 1 2])
+        (frame/join
+          (frame/frame {:a [1 2 3] :b [10 20 30]})
+          (frame/frame {:a [1 2 3] :d [10 20 30]} [2 3 4])
+          :how :left))
 
 
 ; Test handling of common columns
