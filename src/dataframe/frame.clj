@@ -95,7 +95,7 @@
   [df writer]
   (.write writer (str (class df) "\n"))
   (.write writer
-          (let [table (new TableBuilder "idx" (columns df))]
+          (let [table (new TableBuilder "" (columns df))]
             (doall (for [[idx row] (rows->vectors df)]
                      (. table (addRow idx row))))
             (. table toString))))

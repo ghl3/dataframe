@@ -14,8 +14,6 @@ public class TableBuilder {
 
     static final String COLUMN_SEPARATOR = " ";
 
-    static final String HEADER_SEPARATOR = "=";
-
     public TableBuilder(String indexName, Iterable<Object> columns) {
 
         List<String> names = Lists.newArrayList();
@@ -97,7 +95,7 @@ public class TableBuilder {
                                int[] colWidths) {
         for(int colNum = 0; colNum < line.length; colNum++) {
             buf.append(
-                StringUtils.rightPad(
+                StringUtils.leftPad(
                     StringUtils.defaultString(
                         line[colNum]), colWidths[colNum]));
             buf.append(COLUMN_SEPARATOR);
@@ -114,9 +112,6 @@ public class TableBuilder {
         int[] colWidths = colWidths();
 
         addLine(buf, this.header, colWidths);
-
-        buf.append(StringUtils.repeat(HEADER_SEPARATOR, totalWidth()));
-        buf.append('\n');
 
         for(String[] row: this.rows) {
             addLine(buf, row, colWidths);
