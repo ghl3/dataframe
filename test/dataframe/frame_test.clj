@@ -156,3 +156,28 @@
         (frame/outer-join
           (frame/frame {:a [1 2 3] :b [10 20 30]})
           (frame/frame {:a [4 5 6] :c [100 200 300]})))
+
+
+; Test handling of common columns
+
+(expect "foobar" (frame/add-suffix "foo" "bar"))
+
+(expect "foobar" (frame/add-suffix "foo" "bar"))
+
+(expect "foobar" (frame/add-suffix "foo" :bar))
+
+(expect :foobar (frame/add-suffix :foo :bar))
+
+(expect :foobar (frame/add-suffix :foo "bar"))
+
+(expect {:foo 10} (frame/assoc-common-column {} :foo 10 true #{:foo :bar} {:prefer-column :left}))
+
+(expect {} (frame/assoc-common-column {} :foo 10 true #{:foo :bar} {:prefer-column :right}))
+
+(expect {:baz 10} (frame/assoc-common-column {} :baz 10 true #{:foo :bar} {:prefer-column :right}))
+
+(expect {:baz 10} (frame/assoc-common-column {} :baz 10 true #{:foo :bar} {:suffixes ["-left" "-right"]}))
+
+(expect {:foo-left 10} (frame/assoc-common-column {} :foo 10 true #{:foo :bar} {:suffixes ["-left" "-right"]}))
+
+(expect (frame/assoc-common-column {} :foo 10 false #{:foo :bar} {:suffixes ["-left" "-right"]}))

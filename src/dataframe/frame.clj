@@ -360,24 +360,63 @@
     (-list-of-index-row-pairs->frame sorted-idx-row-pairs)))
 
 
+(defn add-suffix
+  "Add a suffix to a name.
+  A name or suffix can be either
+  a string or a keyword"
+  [col-name suffix]
+  (cond
+    (string? col-name) (str col-name (name suffix))
+    (keyword? col-name) (keyword (str (name col-name) (name suffix)))
+    :else (throw (new Exception))))
+
+
+(defn assoc-common-column
+  "Conditionally associated the input
+  column and value pair into the input
+  map.  The name associated in and whether
+  the association happens at all is dependent
+  on the common-col-resolution map, using
+  whether the columns is left? or not."
+  [into-map col-name val left? common-columns
+   {:keys [suffixes prefer-column]
+    :or   {suffixes ["-x" "-y"]
+           prefer-column nil}}]
+
+  (assert (contains? #{:left :right nil} prefer-column))
+
+  (if (not (contains? common-columns col-name))
+    (assoc into-map col-name val)
+
+    (if prefer-column
+
+      (case [prefer-column left?]
+        [:left true] (assoc into-map col-name val)
+        [:left false] into-map
+        [:right false] (assoc into-map col-name val)
+        [:right true] into-map
+        :else (throw (new Exception)))
+
+      (let [[left-suffix right-suffix] suffixes
+            suffix (if left? left-suffix right-suffix)]
+
+        (assoc into-map (add-suffix col-name suffix) val)))))
+
+
 (defn outer-join
-  ; TODO: Handle common column names
-  [^Frame left ^Frame right & {:keys [suffixes] :or {suffixes ["-x" "-y"]}}]
+  [^Frame left ^Frame right & common-col-resolution]
 
   (let [shared-cols (into #{} (set/intersection (set (columns left)) (set (columns right))))
-        column-namer (fn [col left?] (if (contains? shared-cols col)
-                                       (keyword (str
-                                                  (name col)
-                                                  (if left? (first suffixes) (last suffixes))))
-                                       col))
         left-idx (index left)
         right-only-idx (->> right index (filter #(not (contains? (index left) %))))
         idx (concat left-idx right-only-idx)
-        left-cols (for [[col srs] (column-map left)]
-                    [(column-namer col true) (series/series (map #(series/ix srs %) idx) idx)])
-        right-cols (for [[col srs] (column-map right)]
-                    [(column-namer col false) (series/series (map #(series/ix srs %) idx) idx)])
-        col-map (-> {} (into right-cols) (into left-cols))]
+        left-cols  (for [[col srs] (column-map left)]  [col (series/series (map #(series/ix srs %) idx) idx) true])
+        right-cols (for [[col srs] (column-map right)] [col (series/series (map #(series/ix srs %) idx) idx) false])
+        all-cols (concat left-cols right-cols)
+        col-map (reduce (fn [coll [col-name val left?]]
+                          (assoc-common-column coll col-name val left? shared-cols (into {} common-col-resolution)))
+                        {}
+                        all-cols)]
     (frame col-map idx)))
 
 
