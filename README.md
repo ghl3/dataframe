@@ -163,6 +163,91 @@ frame
 </pre>
 
 
+Selecting
+=========
+
+DataFrame core contains a number of functions for selecting specific subsets and items from Series and Frames.
+
+We've already seen the `ix` function, which selects either a single value from a Series or a single row-map from a Frame.
+
+```clojure
+(ix (df/series [1 2 3] [:x :y :z]) :x)
+;1
+```
+
+```clojure
+(ix (df/frame [{:a 1 :b 10}
+               {:a 2 :b 20}
+               {:a 3 :b 30}]
+                [:x :y :z]))
+    :x)
+;{:a 1 :b 10}
+```
+
+The `loc` function allows one to select a subset of the input Series or Frame consisting of a list of index values.
+
+
+```clojure
+(loc (df/series [1 2 3] [:x :y :z]) [:x :y])
+```
+<pre>
+=> class dataframe.series.Series
+:x 1
+:y 2
+</pre>
+
+
+```clojure
+(loc (df/frame [{:a 1 :b 10}
+               {:a 2 :b 20}
+               {:a 3 :b 30}]
+                [:x :y :z]))
+    [:x :y])
+```
+<pre>
+=> class dataframe.frame.Frame
+	:a	:b
+:x	1	10
+:y	2	20
+</pre>
+
+
+In addition to the index-based location, one can select values/rows using a Series of boolean values (the index of this series must align to the index of the Series or Frame)
+
+
+
+```clojure
+(df/select (df/series [1 2 3] [:x :y :z])
+           (df/series [true false true] [:x :y :z]))
+```
+<pre>
+=> class dataframe.series.Series
+:x 1
+:z 3
+</pre>
+
+
+```clojure
+(df/select (df/frame [{:a 1 :b 10}
+               {:a 2 :b 20}
+               {:a 3 :b 30}]
+                [:x :y :z]))
+    (df/series [true false true] [:x :y :z]))
+```
+<pre>
+=> class dataframe.frame.Frame
+	:a	:b
+:x	1	10
+:z	3	30
+</pre>
+
+
+
+
+Transforming
+============
+
+
 DataFrame core has a number of functions for operating on or manipulating Frames.
 
 ```clojure
