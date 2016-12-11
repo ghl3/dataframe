@@ -1,57 +1,12 @@
 (ns dataframe.core
+  (:refer-clojure :exclude [group-by])
   (:require [dataframe.series]
             [dataframe.frame])
   (:import (dataframe.series Series)
            (dataframe.frame Frame)))
 
-; Imported series methods
-
-(def series dataframe.series/series)
-(def series? dataframe.series/series?)
-(def values dataframe.series/values)
-(def update-key dataframe.series/update-key)
-(def mapvals dataframe.series/mapvals)
-
-(def lt dataframe.series/lt)
-(def lte dataframe.series/lte)
-(def gt dataframe.series/gt)
-(def gte dataframe.series/gte)
-(def add dataframe.series/add)
-(def sub dataframe.series/sub)
-(def mul dataframe.series/mul)
-(def div dataframe.series/div)
-(def eq dataframe.series/eq)
-(def neq dataframe.series/neq)
-
-; Imported frame methods
-
-(def frame dataframe.frame/frame)
-
-(def col dataframe.frame/col)
-
-(def column-map dataframe.frame/column-map)
-
-(def columns dataframe.frame/columns)
-
-(def assoc-ix dataframe.frame/assoc-ix)
-
-(def assoc-col dataframe.frame/assoc-col)
-
-(def iterrows dataframe.frame/iterrows)
-
-(def maprows->srs dataframe.frame/maprows->srs)
-(def maprows->df dataframe.frame/maprows->df)
-
-(def sort-rows dataframe.frame/sort-rows)
-
-;(. (var with->) (setMacro))
-
-;(defn with [& args]
-
-(defmacro with-> [& args] `(dataframe.frame/with-> ~@args))
 
 ; Multi Methods
-
 
 (defn delegate
   "Deligate the implementation of a multimethod to an existing function"
@@ -78,6 +33,10 @@
 (delegate select Series dataframe.series/select)
 (delegate select Frame dataframe.frame/select)
 
+(defmulti loc first-type)
+(delegate loc Series dataframe.series/loc)
+(delegate loc Frame dataframe.frame/loc)
+
 (defmulti subset first-type)
 (delegate subset Series dataframe.series/subset)
 (delegate subset Frame dataframe.frame/subset)
@@ -89,3 +48,42 @@
 (defmulti tail first-type)
 (delegate tail Series dataframe.series/tail)
 (delegate tail Frame dataframe.frame/tail)
+
+
+; Imported series methods
+
+(def series dataframe.series/series)
+(def series? dataframe.series/series?)
+(def values dataframe.series/values)
+(def update-key dataframe.series/update-key)
+(def mapvals dataframe.series/mapvals)
+
+(def lt dataframe.series/lt)
+(def lte dataframe.series/lte)
+(def gt dataframe.series/gt)
+(def gte dataframe.series/gte)
+(def add dataframe.series/add)
+(def sub dataframe.series/sub)
+(def mul dataframe.series/mul)
+(def div dataframe.series/div)
+(def eq dataframe.series/eq)
+(def neq dataframe.series/neq)
+
+
+; Imported frame methods
+
+(def frame dataframe.frame/frame)
+(def col dataframe.frame/col)
+(def column-map dataframe.frame/column-map)
+(def columns dataframe.frame/columns)
+(def assoc-ix dataframe.frame/assoc-ix)
+(def assoc-col dataframe.frame/assoc-col)
+(def iterrows dataframe.frame/iterrows)
+(def maprows->srs dataframe.frame/maprows->srs)
+(def maprows->df dataframe.frame/maprows->df)
+(def sort-rows dataframe.frame/sort-rows)
+(def group-by dataframe.frame/group-by)
+(def group-by-fn dataframe.frame/group-by-fn)
+(def join dataframe.frame/join)
+
+(defmacro with-> [& args] `(dataframe.frame/with-> ~@args))

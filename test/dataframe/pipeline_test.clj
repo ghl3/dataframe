@@ -1,4 +1,5 @@
 (ns dataframe.pipeline-test
+  (:refer-clojure :exclude [group-by])
   (:require [dataframe.core :refer :all]
             [expectations :refer [expect]]))
 

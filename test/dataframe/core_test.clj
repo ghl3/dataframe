@@ -1,4 +1,5 @@
 (ns dataframe.core-test
+  (:refer-clojure :exclude [group-by])
   (:require [clojure.test :refer :all]
             [dataframe.core :refer :all]
             [dataframe.frame :as frame]))
