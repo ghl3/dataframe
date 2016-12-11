@@ -205,3 +205,10 @@
 (expect {:foo-left 10} (frame/assoc-common-column {} :foo 10 true #{:foo :bar} {:suffixes ["-left" "-right"]}))
 
 (expect (frame/assoc-common-column {} :foo 10 false #{:foo :bar} {:suffixes ["-left" "-right"]}))
+
+
+(expect (more-of grouped
+                 (frame/frame {:a [1 1] :b [10 20]} [0 1]) (get grouped 1)
+                 (frame/frame {:a [3] :b [30]} [2])        (get grouped 3))
+        (frame/group-by-fn
+          (frame/frame {:a [1 1 3] :b [10 20 30]}) :a))

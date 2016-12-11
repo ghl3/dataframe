@@ -435,6 +435,14 @@
                         all-cols)]
     (frame col-map idx)))
 
+(defn group-by-fn
+  "Group a Frame by the given function,
+  which must be a function of it's a row-map,
+  and return a map of fn vals to Frames"
+  [^Frame df f]
+  (let [grouped-idx-rows (group-by (fn [[idx row]] (f row)) (iterrows df))]
+    (into {} (for [[k idx-row-list] grouped-idx-rows]
+               [k (frame idx-row-list)]))))
 
 (defn replace-df-column
   "Takes a symbol representing a Frame
