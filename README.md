@@ -242,6 +242,66 @@ In addition to the index-based location, one can select values/rows using a Seri
 </pre>
 
 
+Grouping
+========
+
+The `group-by` function takes a Frame and a series whose index
+is aligned with the Frame's index and returns a map of 
+values to Frames.  Each Frame is grouped by the value in the
+input index.
+
+```clojure
+
+(def data (df/frame [{:a 1 :b 10}
+                        {:a 2 :b 20}
+                        {:a 3 :b 30}]
+                       [:x :y :z]))
+
+(df/group-by data (df/series [:foo :foo :bar] [:x :y :z]))
+```
+
+One can also group by a function of each row using the `group-by-fn` function.  This function should take the row as a map of column names to values and return a single value that represents the group value for that row:
+
+```clojure
+
+(def data (df/frame [{:a 1 :b 10}
+                     {:a 2 :b 20}
+                     {:a 3 :b 30}]
+                    [:x :y :z]))
+
+(df/group-by-fn data (fn [row] (+ (:a row) (:b row))))
+```
+
+Joining
+=======
+
+To DataFrames may be joined together.  Dataframe supports inner, left, right, and outer joins, which are performed using the index of the two dataframes.
+
+
+
+```clojure
+
+(def left (df/frame [{:a 1 :b 10}
+                     {:a 2 :b 20}
+                     {:a 3 :b 30}]
+                    [:x :y :z]))
+                    
+(def right (df/frame [{:c 100 :d "Foo"}
+                      {:c 200 :d "Bar"}
+                      {:c 300 :d "Baz"}]
+                     [:w :x :y]))                    
+
+(df/join left right :how :outer)
+```
+
+<pre>
+=> class dataframe.frame.Frame
+    :b  :a  :c  :d 
+:x  10   1 200 Bar 
+:y  20   2 300 Baz 
+:z  30   3 nil nil 
+:w nil nil 100 Foo 
+</pre>
 
 
 Transforming
