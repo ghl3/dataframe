@@ -85,7 +85,8 @@
 
       (assert (apply distinct? index))
       (assert (= (count data) (count index)))
-      (assert (apply = (map type (filter (comp not nil?) data))))
+      (if (not (every? nil? data))
+        (assert (apply = (map type (filter (comp not nil?) data)))))
 
       (Series. data index lookup))))
 
@@ -190,6 +191,11 @@
     (let [start (- (count srs) n)
           end (count srs)]
       (subset srs start end))))
+
+
+(defn ->map
+  [^Series srs]
+  (into {} srs))
 
 (defn index-aligned-pairs
   "Take two series and return

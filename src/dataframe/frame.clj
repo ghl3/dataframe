@@ -1,5 +1,5 @@
 (ns dataframe.frame
-  (:refer-clojure)
+  (:refer-clojure :exclude [group-by])
   (:require [dataframe.series :as series]
             [clojure.string :as str]
             [dataframe.series :as series]
@@ -92,15 +92,18 @@
       :else (throw (new Exception "Encountered unexpected type for frame constructor")))))
 
 
+(def empty-frame (Frame. [] {}))
+
 (defmethod print-method Frame
   [df writer]
   (.write writer (str (class df) "\n"))
-  (.write writer
-          (let [table (new TableBuilder "" (columns df))]
-            (doall (for [[idx row] (rows->vectors df)]
-                     (. table (addRow idx row))))
-            (. table toString))))
-
+  (if (empty? df)
+    (.write writer "[]")
+    (.write writer
+            (let [table (new TableBuilder "" (columns df))]
+              (doall (for [[idx row] (rows->vectors df)]
+                       (. table (addRow idx row))))
+              (. table toString)))))
 
 
 (defn ^{:protected true} -map->frame
@@ -165,8 +168,8 @@
   [seq-of-idx->maps]
 
   (let [index (into [] (map first seq-of-idx->maps))
-        row-maps (map last seq-of-idx->maps)
-        columns (into #{} (flatten (map keys row-maps)))
+        row-maps  (map last seq-of-idx->maps)
+        columns (into #{} (filter (comp not nil?) (flatten (map keys row-maps))))
         col->vec (into {} (for [col columns]
                             [col (vec (map #(get % col nil) row-maps))]))
         col->srs (into {} (for [[col vals] col->vec]
@@ -299,6 +302,7 @@
 
   (assert (= (count df) (count selection)))
 
+  ; TODO: Align series
   (let [selection (if (series/series? selection) (series/values selection) selection)
         to-keep (for [[keep? [idx row-map]] (zip selection df)
                       :when keep?]
@@ -308,6 +312,21 @@
         vals (map #(nth % 1) to-keep)]
 
     (frame vals idx)))
+
+(defn loc
+  "Take a Frame and a list of indices.
+  Return a DataFrame consisting only of
+  the input index rows (in the order of
+  the given index).
+  If an entry in indices is not in the
+  input Frame, then each column will be nil."
+  [^Frame df indices]
+
+  (if (empty? indices)
+    empty-frame
+    (-list-of-index-row-pairs->frame
+      (into [] (for [i indices]
+                 [i (if-let [row (ix df i)] (series/->map row) {})])))))
 
 (defn subset
   "Return a subset of the input Frame
@@ -436,15 +455,24 @@
                         all-cols)]
     (frame col-map idx)))
 
+
+(defn group-by
+  [^Frame df vals]
+  (let [srs (if (series/series? vals) vals (series/series vals))
+        grouped-vals (core/group-by (fn [[ix val]] val) srs)
+        val-index-list (into {} (for [[val ix-val-list] grouped-vals]
+                                  [val (into [] (map first ix-val-list))]))]
+    (into {} (for [[val idx-list] val-index-list]
+               [val (loc df idx-list)]))))
+
 (defn group-by-fn
   "Group a Frame by the given function,
   which must be a function of it's a row-map,
   and return a map of fn vals to Frames"
   [^Frame df f]
-  (let [grouped-idx-rows (group-by (fn [[idx row]] (f row)) (iterrows df))]
+  (let [grouped-idx-rows (core/group-by (fn [[idx row]] (f row)) (iterrows df))]
     (into {} (for [[k idx-row-list] grouped-idx-rows]
                [k (frame idx-row-list)]))))
-
 
 (defn replace-$-with-keys
   "Takes a context (typically a map or a Frame),
@@ -487,11 +515,3 @@
           head (replace-$-with-keys df (first exprs) 'dataframe.frame/col)
           tail (rest exprs)]
       `(let [~sym (-> ~df ~head)] (with-> ~sym ~@tail)))))
-
-(defmacro group-by-expr
-  "Group a Frame by an expression
-  of the rows, where columns are represented
-  as $col."
-  [^Frame df expr]
-  (let [sym (gensym)]
-    `(group-by-fn ~df (fn [~sym] ~(replace-$-with-keys sym expr core/get)))))

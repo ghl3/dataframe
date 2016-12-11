@@ -76,6 +76,15 @@
       [:w :x :y :z])
     [false true nil "true"]))
 
+
+(expect (frame/frame {:a [1 3] :b [20 30]} [1 2])
+        (frame/loc
+          (frame/frame {:a [1 1 3] :b [10 20 30]}) [1 2]))
+
+(expect (frame/frame {:a [1 3 nil nil] :b [20 30 nil nil]} [1 2 10 20])
+        (frame/loc
+          (frame/frame {:a [1 1 3] :b [10 20 30]}) [1 2 10 20]))
+
 ;(expect (series/series [15])
 ;        (frame/with-context
 ;          (frame/frame [{:b 10}])
@@ -212,6 +221,21 @@
 
 
 (expect (more-of grouped
+                 (frame/frame {:a [1 2] :b [10 20]} [0 1]) (:foo grouped)
+                 (frame/frame {:a [3] :b [30]} [2]) (:bar grouped))
+        (frame/group-by
+          (frame/frame {:a [1 2 3] :b [10 20 30]})
+          [:foo :foo :bar]))
+
+(expect (more-of grouped
+                 (frame/frame {:a [3 2] :b [30 20]} [2 1]) (:foo grouped)
+                 (frame/frame {:a [1] :b [10]} [0]) (:bar grouped))
+        (frame/group-by
+          (frame/frame {:a [1 2 3] :b [10 20 30]})
+          (series/series [:foo :foo :bar] [2 1 0])))
+
+
+(expect (more-of grouped
                  (frame/frame {:a [1 1] :b [10 20]} [0 1]) (get grouped 1)
                  (frame/frame {:a [3] :b [30]} [2])        (get grouped 3))
         (frame/group-by-fn
@@ -220,8 +244,7 @@
 
 (expect (more-of grouped
                  (frame/frame {:a [1 10] :b [10 1]} [0 2]) (get grouped 11)
-                 (frame/frame {:a [1] :b [5]} [1])        (get grouped 6)
-                 (frame/frame {:a [10] :b [17]} [3])        (get grouped 27))
-
-        (frame/group-by-expr
-          (frame/frame {:a [1 1 10 10] :b [10 5 1 17]}) (+ $a $b)))
+                 (frame/frame {:a [1] :b [5]} [1])         (get grouped 6)
+                 (frame/frame {:a [10] :b [17]} [3])       (get grouped 27))
+        (frame/with-> (frame/frame {:a [1 1 10 10] :b [10 5 1 17]})
+                (frame/group-by (series/add $a $b))))

@@ -14,13 +14,14 @@ public class TableBuilder {
 
     static final String COLUMN_SEPARATOR = " ";
 
+
     public TableBuilder(String indexName, Iterable<Object> columns) {
 
         List<String> names = Lists.newArrayList();
 
         names.add(formatObject(indexName));
 
-        for (Object col: columns) {
+        for (Object col : columns) {
             names.add(formatObject(col));
         }
 
