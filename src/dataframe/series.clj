@@ -118,6 +118,21 @@
   ([^Series srs i] (get srs i nil))
   ([^Series srs i or-else] (get srs i or-else)))
 
+(defn loc
+  "Take a Series and a list of indices.
+  Return a Seriues consisting only of
+  the input index rows (in the order of
+  the given index).
+  If an entry in indices is not in the
+  input Series, then it's value will be nil"
+  [^Series srs indices]
+  (if (empty? indices)
+    (series [])
+    (series
+      (for [i indices] (ix srs i))
+      indices)))
+
+
 (defn set-index
   "Return a series with the same values
   but with the updated index."

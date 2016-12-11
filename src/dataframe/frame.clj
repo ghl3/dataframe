@@ -297,21 +297,11 @@
                [idx (f row)])]
     (-list-of-index-row-pairs->frame rows)))
 
-(defn select
-  [^Frame df selection]
 
-  (assert (= (count df) (count selection)))
 
-  ; TODO: Align series
-  (let [selection (if (series/series? selection) (series/values selection) selection)
-        to-keep (for [[keep? [idx row-map]] (zip selection df)
-                      :when keep?]
-                  [idx row-map])
-
-        idx (map #(nth % 0) to-keep)
-        vals (map #(nth % 1) to-keep)]
-
-    (frame vals idx)))
+(defn indices-alignable?
+  [idx-left idx-right]
+  (= (sort idx-left) (sort idx-right)))
 
 (defn loc
   "Take a Frame and a list of indices.
@@ -327,6 +317,21 @@
     (-list-of-index-row-pairs->frame
       (into [] (for [i indices]
                  [i (if-let [row (ix df i)] (series/->map row) {})])))))
+
+(defn select
+  [^Frame df sel]
+
+  (let [sel (if (series/series? sel) sel (series/series sel))]
+
+    (assert (indices-alignable? (index df) (series/index sel)))
+
+    (let [to-keep (for [[[idx keep?] [idx row-map]] (zip sel (loc df (series/index sel)))
+                        :when keep?]
+                    [idx row-map])
+          idx (map first to-keep)
+          vals (map last to-keep)]
+      (frame vals idx))))
+
 
 (defn subset
   "Return a subset of the input Frame

@@ -136,3 +136,11 @@
     (util/nillify +)
     (series/series [1 2 3] [:a :b :c])
     (series/series [10 20 30] [:a :c :d])))
+
+(expect
+  (series/series [1 2] [0 1])
+  (series/loc (series/series [1 2 3]) [0 1]))
+
+(expect
+  (series/series [1 2 nil nil] [0 1 1000 2000])
+  (series/loc (series/series [1 2 3]) [0 1 1000 2000]))

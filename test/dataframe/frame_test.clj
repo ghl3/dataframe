@@ -74,7 +74,7 @@
     (frame/frame
       {:a [1 2 3 4] :b [5 6 7 8]}
       [:w :x :y :z])
-    [false true nil "true"]))
+    (series/series [false true nil true] [:w :x :y :z])))
 
 
 (expect (frame/frame {:a [1 3] :b [20 30]} [1 2])
