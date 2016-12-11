@@ -1,7 +1,8 @@
 (ns dataframe.frame-test
   (:require [dataframe.frame :as frame :refer [index]]
             [expectations :refer [expect expect-focused more-of]]
-            [dataframe.series :as series]))
+            [dataframe.series :as series]
+            [clojure.core :as core]))
 
 ; Constructors
 
@@ -81,8 +82,11 @@
 ;          (series/add 5 $b)))
 
 
-(expect '(+ 5 (dataframe.frame/col {:b 10} :b))
-  (frame/replace-df-column {:b 10} '(+ 5 $b)))
+(expect '(+ 5 (core/get {:b 10} :b))
+        (frame/replace-$-with-keys {:b 10} '(+ 5 $b) 'core/get))
+
+(expect 15
+        (eval (frame/replace-$-with-keys {:b 10} '(+ 5 $b) get)))
 
 (expect 15
   (frame/with-> 12 (+ 5) (- 2)))
@@ -212,3 +216,12 @@
                  (frame/frame {:a [3] :b [30]} [2])        (get grouped 3))
         (frame/group-by-fn
           (frame/frame {:a [1 1 3] :b [10 20 30]}) :a))
+
+
+(expect (more-of grouped
+                 (frame/frame {:a [1 10] :b [10 1]} [0 2]) (get grouped 11)
+                 (frame/frame {:a [1] :b [5]} [1])        (get grouped 6)
+                 (frame/frame {:a [10] :b [17]} [3])        (get grouped 27))
+
+        (frame/group-by-expr
+          (frame/frame {:a [1 1 10 10] :b [10 5 1 17]}) (+ $a $b)))

@@ -4,7 +4,8 @@
             [clojure.string :as str]
             [dataframe.series :as series]
             [dataframe.util :refer :all]
-            [clojure.set :as set])
+            [clojure.set :as set]
+            [clojure.core :as core])
   (:import (java.util Map)
            (dataframe TableBuilder)))
 
@@ -444,13 +445,15 @@
     (into {} (for [[k idx-row-list] grouped-idx-rows]
                [k (frame idx-row-list)]))))
 
-(defn replace-df-column
-  "Takes a symbol representing a Frame
-  and an expression.  Walks the expression
-  and replaces symbols starting with '$'
-  with an expression to get a column from the
-  dataframe whose name is a keyword matching
-  the '$' symbol.
+
+(defn replace-$-with-keys
+  "Takes a context (typically a map or a Frame),
+   an expression (containing '$' values)
+   and a getter function (typically core/get
+   or frame/col).
+   Return an expression where each instance of
+   a $var is replaced with the getter-function
+   getting :var from the input context.
 
   In other words, if the expression contains:
 
@@ -458,15 +461,15 @@
 
   it is replaced by:
 
-  (col df :foo)
+  (get ctx :foo)
   "
-  [df expr]
+  [ctx expr get-fn]
   (clojure.walk/postwalk
     (fn [x]
       (if (and
             (symbol? x)
             (clojure.string/starts-with? (name x) "$"))
-        `(col ~df ~(keyword (subs (name x) 1)))
+        `(~get-fn ~ctx ~(keyword (subs (name x) 1)))
         x))
     expr))
 
@@ -481,6 +484,14 @@
   (if (empty? exprs)
     df
     (let [sym (gensym)
-          head (replace-df-column df (first exprs))
+          head (replace-$-with-keys df (first exprs) 'dataframe.frame/col)
           tail (rest exprs)]
       `(let [~sym (-> ~df ~head)] (with-> ~sym ~@tail)))))
+
+(defmacro group-by-expr
+  "Group a Frame by an expression
+  of the rows, where columns are represented
+  as $col."
+  [^Frame df expr]
+  (let [sym (gensym)]
+    `(group-by-fn ~df (fn [~sym] ~(replace-$-with-keys sym expr core/get)))))
